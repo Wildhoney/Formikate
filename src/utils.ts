@@ -1,55 +1,45 @@
 import { useFormik, type FormikSharedConfig } from "formik";
 import { useLayoutEffect, useMemo, useState } from "react";
-import { ZodObject, type ZodTypeAny } from "zod";
-import type { Field, SchematicProps } from "./types";
+import * as z from "zod";
+import type { Field, Fields, SchematikProps, Screen } from "./types";
 import { toFormikValidationSchema } from "zod-formik-adapter";
 
+function isRelevant(screen: Screen | undefined | null) {
+  return (field: Field) => field.step === screen && field.enabled !== false;
+}
+
 export function useController<Values extends FormikSharedConfig>({
-  validationSchema: getValidationSchema,
+  schematikConfig,
   ...props
-}: SchematicProps<Values>) {
-  const [validationSchema, setValidationSchema] = useState<ZodObject>(
-    getValidationSchema(props.initialValues),
+}: SchematikProps<Values>) {
+  const screen = schematikConfig?.screen;
+  const [validationSchema, setValidationSchema] = useState<Fields>(
+    (schematikConfig?.getFields(props.initialValues) ?? []).filter(
+      isRelevant(screen),
+    ),
   );
 
   const form = useFormik({
     ...props,
-    validationSchema: toFormikValidationSchema(validationSchema),
+    validationSchema: intoValidationSchema(validationSchema),
   });
 
-  const fields = useMemo(
-    () => parseValidationSchema(validationSchema),
-    [validationSchema],
-  );
+  useLayoutEffect((): void => {
+    const fields = schematikConfig?.getFields(form.values) ?? [];
+    setValidationSchema(fields.filter(isRelevant(screen)));
+  }, [form.values, schematikConfig, screen]);
 
-  useLayoutEffect(
-    (): void => setValidationSchema(getValidationSchema(form.values)),
-    [form.values, getValidationSchema],
+  return useMemo(
+    () => ({ state: { form, validationSchema, screen } }),
+    [validationSchema, form, screen],
   );
-
-  return useMemo(() => ({ state: { form, fields } }), [fields, form]);
 }
 
-export function parseValidationSchema(
-  schema: ZodTypeAny,
-  prefix: string[] = [],
-): Field[] {
-  if (schema instanceof ZodObject) {
-    const shape = schema.shape;
-    return Object.entries(shape).flatMap(([key, value]) =>
-      parseValidationSchema(value, [...prefix, key]),
-    );
-  }
+function intoValidationSchema(fields: Fields) {
+  const validationSchema = fields.reduce<Record<string, z.ZodTypeAny>>(
+    (acc, field) => ({ ...acc, [field.name]: field.validate }),
+    {},
+  );
 
-  //   if (schema instanceof ZodArray) {
-  //     return getPaths(schema.element as ZodArray, [...prefix, "[*]"]);
-  //   }
-
-  return [
-    {
-      path: prefix.join("."),
-      meta: schema.meta() as Field["meta"],
-      optional: schema.isOptional(),
-    },
-  ];
+  return toFormikValidationSchema(z.object(validationSchema));
 }
