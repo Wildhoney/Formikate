@@ -1,5 +1,5 @@
-import { Fragment, useMemo, useState, type ReactElement } from 'react';
-import { FormikContext, getIn, type FormikValues } from 'formik';
+import { useMemo, useState, type ReactElement } from 'react';
+import { FormikContext, type FormikValues } from 'formik';
 import type {
     Fields,
     SchematikProps,
@@ -8,7 +8,7 @@ import type {
     UseSchematikProps,
     ValidationSchemaField,
 } from './types';
-import { useController } from './utils';
+import { useController, renderFields, renderInputs } from './utils.tsx'; // Updated imports
 
 export type { Fields } from './types';
 
@@ -52,37 +52,15 @@ export function Schematik<Values extends FormikValues>(
 ): ReactElement {
     const controller = useController(props);
 
+    const visibleFields = renderFields(
+        controller.state.validationSchema,
+        controller.state.step,
+        props.schematikConfig?.steps ?? [],
+    );
+
     return (
         <FormikContext.Provider value={controller.state.form}>
-            {controller.state.validationSchema
-                .filter((field) => {
-                    const step = controller.state.step;
-                    const steps = props.schematikConfig?.steps ?? [];
-                    if (steps.length === 0) {
-                        return true;
-                    }
-                    if (step == null) {
-                        return field.step === undefined;
-                    }
-                    return field.step === step;
-                })
-                .map((field) => (
-                    <Fragment key={field.name}>
-                        {field.element({
-                            ...controller.state.form,
-                            optional:
-                                field.validate.safeParse(undefined).success,
-                            value: getIn(
-                                controller.state.form.values,
-                                field.name,
-                            ),
-                            error: getIn(
-                                controller.state.form.errors,
-                                field.name,
-                            ),
-                        })}
-                    </Fragment>
-                ))}
+            {renderInputs(visibleFields, controller.state.form)}
             {typeof props.children === 'function'
                 ? props.children(controller.state.form)
                 : props.children}

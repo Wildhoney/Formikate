@@ -1,5 +1,13 @@
 import { useFormik, type FormikValues, getIn } from 'formik';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+    Fragment,
+    type ReactElement,
+} from 'react';
 import * as z from 'zod';
 import type {
     Field,
@@ -215,4 +223,53 @@ function useExpose<Values extends FormikValues>(
         form.errors,
         fields,
     ]);
+}
+
+/**
+ * Filters the validation schema fields to return only those that should be visible
+ * based on the current step.
+ *
+ * @param validationSchema The complete validation schema fields.
+ * @param currentStep The current step of the form.
+ * @param steps An array of all defined steps in the form.
+ * @returns An array of fields that are visible for the current step.
+ */
+export function renderFields(
+    validationSchema: Fields,
+    currentStep: Step | null | undefined,
+    steps: Step[],
+): Fields {
+    return validationSchema.filter((field) => {
+        if (steps.length === 0) {
+            return true;
+        }
+        if (currentStep == null) {
+            return field.step === undefined;
+        }
+        return field.step === currentStep;
+    });
+}
+
+/**
+ * Renders the provided fields as React elements, injecting formik props.
+ *
+ * @template Values The type of the Formik values.
+ * @param fields An array of fields to render.
+ * @param form The Formik bag, containing form state and helpers.
+ * @returns An array of React elements representing the rendered fields.
+ */
+export function renderInputs<Values extends FormikValues>(
+    fields: Fields,
+    form: ReturnType<typeof useFormik<Values>>,
+): ReactElement[] {
+    return fields.map((field) => (
+        <Fragment key={field.name}>
+            {field.element({
+                ...form,
+                optional: field.validate.safeParse(undefined).success,
+                value: getIn(form.values, field.name),
+                error: getIn(form.errors, field.name),
+            })}
+        </Fragment>
+    ));
 }
