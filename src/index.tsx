@@ -3,7 +3,7 @@ import { FormikContext, getIn, type FormikValues } from 'formik';
 import type {
     Fields,
     SchematikProps,
-    Screen,
+    Step,
     UseSchematikConfig,
     UseSchematikProps,
     ValidationSchemaField,
@@ -20,24 +20,23 @@ export function field<T>(field: ValidationSchemaField<T>): Fields[number] {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useSchematik({
     fields,
-    initialScreen,
-    screens = [],
+    initialStep,
+    steps = [],
 }: UseSchematikProps): UseSchematikConfig {
-    const [screen, setScreen] = useState<null | Screen>(initialScreen ?? null);
+    const [step, setStep] = useState<null | Step>(initialStep ?? null);
 
     return useMemo(() => {
-        const current = screen !== null ? screens.indexOf(screen) : -1;
+        const current = step !== null ? steps.indexOf(step) : -1;
         const hasPrevious = current > 0;
-        const hasNext = current !== -1 && current < screens.length - 1;
+        const hasNext = current !== -1 && current < steps.length - 1;
 
-        const handlePrevious = () =>
-            hasPrevious && setScreen(screens[current - 1]);
-        const handleNext = () => hasNext && setScreen(screens[current + 1]);
-        const handleSet = (screen: Screen) => setScreen(screen);
+        const handlePrevious = () => hasPrevious && setStep(steps[current - 1]);
+        const handleNext = () => hasNext && setStep(steps[current + 1]);
+        const handleSet = (step: Step) => setStep(step);
 
         return {
-            screen,
-            screens,
+            step,
+            steps,
             hasPrevious,
             hasNext,
             getFields: fields,
@@ -45,7 +44,7 @@ export function useSchematik({
             handleNext,
             handleSet,
         };
-    }, [fields, screen, screens]);
+    }, [fields, step, steps]);
 }
 
 export function Schematik<Values extends FormikValues>(
@@ -57,21 +56,22 @@ export function Schematik<Values extends FormikValues>(
         <FormikContext.Provider value={controller.state.form}>
             {controller.state.validationSchema
                 .filter((field) => {
-                    const screen = controller.state.screen;
-                    const screens = props.schematikConfig?.screens ?? [];
-                    if (screens.length === 0) {
+                    const step = controller.state.step;
+                    const steps = props.schematikConfig?.steps ?? [];
+                    if (steps.length === 0) {
                         return true;
                     }
-                    if (screen == null) {
+                    if (step == null) {
                         return field.step === undefined;
                     }
-                    return field.step === screen;
+                    return field.step === step;
                 })
                 .map((field) => (
                     <Fragment key={field.name}>
                         {field.element({
                             ...controller.state.form,
-                            optional: field.validate.safeParse(undefined).success,
+                            optional:
+                                field.validate.safeParse(undefined).success,
                             value: getIn(
                                 controller.state.form.values,
                                 field.name,

@@ -7,23 +7,23 @@ type FormikProps<Values extends FormikValues> = Omit<
     'validationSchema'
 >;
 
-export type Screen = string | number | symbol;
+export type Step = string | number | symbol;
 
 export type UseSchematikProps = {
     fields(values: unknown): Fields;
-    screens?: Screen[];
-    initialScreen?: Screen;
+    steps?: Step[];
+    initialStep?: Step;
 };
 
 export type UseSchematikConfig = {
-    screen: null | Screen;
-    screens: Screen[];
+    step: null | Step;
+    steps: Step[];
     getFields(values: unknown): Fields;
     hasPrevious: boolean;
     hasNext: boolean;
     handlePrevious(): void;
     handleNext(): void;
-    handleSet(screen: Screen): void;
+    handleSet(step: Step): void;
 };
 
 export type SchematikProps<Values extends FormikValues> =
@@ -41,7 +41,7 @@ type FieldProps<Values extends FormikValues> = ReturnType<
 
 export type ValidationSchemaField<T> = {
     name: string;
-    step?: Screen;
+    step?: Step;
     enabled?: boolean;
     validate: ZodType<T>;
     optional?: boolean;
@@ -52,7 +52,7 @@ export type ValidationSchemaField<T> = {
 
 export type Field = {
     name: string;
-    step?: Screen;
+    step?: Step;
     enabled?: boolean;
     validate: ZodType<unknown>;
     optional?: boolean;

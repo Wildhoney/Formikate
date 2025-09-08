@@ -1,18 +1,23 @@
 import * as z from 'zod';
-import { Screens } from './types';
 import { field, Fields } from '../../src';
 
-const schema= z.object({
+const enum Steps {
+    Name,
+    Address,
+    Review,
+}
+
+const schema = z.object({
     name: z.string().min(1).max(100),
     age: z.string().min(2).max(100),
     telephone: z.string().min(1).max(15),
-})
+});
 
-export function fields(values: z.infer<typeof schema>): Fields {
+export function fields(_values: z.infer<typeof schema>): Fields {
     return [
         field({
             name: 'name',
-            step: Screens.Name,
+            step: Steps.Name,
             validate: schema.shape.name,
             element({ value, error, handleChange }) {
                 return (
@@ -30,7 +35,7 @@ export function fields(values: z.infer<typeof schema>): Fields {
         }),
         field({
             name: 'age',
-            step: Screens.Name,
+            step: Steps.Name,
             validate: schema.shape.age,
             element({ value, error, handleChange }) {
                 return (
@@ -48,7 +53,7 @@ export function fields(values: z.infer<typeof schema>): Fields {
         }),
         field({
             name: 'telephone',
-            step: Screens.Address,
+            step: Steps.Address,
             validate: schema.shape.telephone,
             element({ value, error, handleChange }) {
                 return (

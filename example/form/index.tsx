@@ -1,21 +1,18 @@
 import { ReactElement, useCallback } from 'react';
 import { Schematik, useSchematik } from '../../src';
-import { fields } from './utils';
-import { Screens } from './types';
+import { fields, Steps } from './utils';
 
 export default function App(): ReactElement {
     const schematik = useSchematik({
         fields,
-        screens: [Screens.Name, Screens.Address, Screens.Review],
-        initialScreen: Screens.Name,
+        steps: [Steps.Name, Steps.Address, Steps.Review],
+        initialStep: Steps.Name,
     });
 
     const handleSubmit = useCallback(
         (values) => {
-            if (schematik.screen === Screens.Review) {
+            if (schematik.step === Steps.Review)
                 return void console.log('Submitting form:', values);
-            }
-
             schematik.handleNext();
         },
         [schematik],
@@ -31,7 +28,7 @@ export default function App(): ReactElement {
         >
             {(props) => (
                 <form onSubmit={props.handleSubmit}>
-                    {schematik.screen === Screens.Review && (
+                    {schematik.step === Steps.Review && (
                         <div>
                             <h2>Review your information</h2>
                             <pre>{JSON.stringify(props.values, null, 2)}</pre>
@@ -47,9 +44,7 @@ export default function App(): ReactElement {
                     </button>
 
                     <button type="submit">
-                        {schematik.screen === Screens.Review
-                            ? 'Submit'
-                            : 'Next'}
+                        {schematik.step === Steps.Review ? 'Submit' : 'Next'}
                     </button>
                 </form>
             )}
