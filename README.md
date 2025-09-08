@@ -10,22 +10,22 @@
 Define your steps and fields:
 
 ```tsx
-export const enum Screens {
-    Name,
-    Address,
-    Review,
-}
-
 import * as z from 'zod';
+import { Steps } from './types';
 import { field, Fields } from 'schematik';
-import { Screens } from './types';
 
-export function fields(): Fields {
+const schema = z.object({
+    name: z.string().min(1).max(100),
+    age: z.string().min(2).max(100),
+    telephone: z.string().min(1).max(15),
+});
+
+export function fields(values: z.infer<typeof schema>): Fields {
     return [
         field({
             name: 'name',
-            step: Screens.Name,
-            validate: z.string(),
+            step: Steps.Name,
+            validate: schema.shape.name,
             element({ value, error, handleChange }) {
                 return (
                     <div>
@@ -42,8 +42,8 @@ export function fields(): Fields {
         }),
         field({
             name: 'age',
-            step: Screens.Name,
-            validate: z.string().min(2).max(100),
+            step: Steps.Name,
+            validate: schema.shape.age,
             element({ value, error, handleChange }) {
                 return (
                     <div>
@@ -60,8 +60,8 @@ export function fields(): Fields {
         }),
         field({
             name: 'telephone',
-            step: Screens.Address,
-            validate: z.string().min(10).max(15),
+            step: Steps.Address,
+            validate: schema.shape.telephone,
             element({ value, error, handleChange }) {
                 return (
                     <div>
@@ -83,17 +83,28 @@ export function fields(): Fields {
 Use the `Schematik` component and `useSchematik` hook in your application:
 
 ```tsx
-import { ReactElement } from 'react';
+import { ReactElement, useCallback } from 'react';
 import { Schematik, useSchematik } from 'schematik';
 import { fields } from './utils';
-import { Screens } from './types';
+import { Steps } from './types';
 
 export default function App(): ReactElement {
     const schematik = useSchematik({
         fields,
-        screens: [Screens.Name, Screens.Address, Screens.Review],
-        initialScreen: Screens.Name,
+        steps: [Steps.Name, Steps.Address, Steps.Review],
+        initialStep: Steps.Name,
     });
+
+    const handleSubmit = useCallback(
+        (values) => {
+            if (schematik.step === Steps.Review) {
+                return void console.log('Submitting form:', values);
+            }
+
+            schematik.handleNext();
+        },
+        [schematik],
+    );
 
     return (
         <Schematik
@@ -101,10 +112,17 @@ export default function App(): ReactElement {
             schematikConfig={schematik}
             validateOnBlur={false}
             validateOnChange={false}
-            onSubmit={console.log}
+            onSubmit={handleSubmit}
         >
             {(props) => (
                 <form onSubmit={props.handleSubmit}>
+                    {schematik.step === Steps.Review && (
+                        <div>
+                            <h2>Review your information</h2>
+                            <pre>{JSON.stringify(props.values, null, 2)}</pre>
+                        </div>
+                    )}
+
                     <button
                         type="button"
                         disabled={!schematik.hasPrevious}
@@ -113,14 +131,9 @@ export default function App(): ReactElement {
                         Back
                     </button>
 
-                    <button
-                        type="button"
-                        disabled={!schematik.hasNext}
-                        onClick={schematik.handleNext}
-                    >
-                        Next
+                    <button type="submit">
+                        {schematik.step === Steps.Review ? 'Submit' : 'Next'}
                     </button>
-                    <button type="submit">Submit</button>
                 </form>
             )}
         </Schematik>

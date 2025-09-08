@@ -8,6 +8,7 @@ This document contains notes and observations about the Schematik repository to 
 - **Language:** TypeScript
 - **Linting:** ESLint
 - **Type Checking:** TypeScript
+- **Package Manager:** npm and yarn
 
 ## Project Structure
 
@@ -21,7 +22,7 @@ This document contains notes and observations about the Schematik repository to 
 
 ## Common Commands
 
-The project uses `npm` for package management.
+The project uses `npm` for package management, but also has a `yarn.lock` file.
 
 - `npm install`: Install dependencies.
 - `npm run dev`: Start the development server.
@@ -44,9 +45,15 @@ A `Makefile` is also available for convenience:
 
 - **Type Definitions:** Core types are centralized in `src/types.ts`.
 - **Hooks:** Custom hooks are located in `src/utils.ts`.
-- **Generics:** The core components and hooks like `useController` and `SchematikProps` are generic and use `FormikValues` for type safety with Formik.
+- **Generics:** The core components and hooks like `useController` and `SchematikProps` are generic. The example in `example/form/utils.tsx` uses `zod` and `z.infer<typeof schema>` for strong-typing.
+- **Styling:** The project uses `.prettierrc` for code formatting.
+- **Linting:** The project uses `eslint.config.mjs`.
+
+## Dependencies
+
+- `zod`: for schema validation.
+- `zod-formik-adapter`: for using zod schemas with formik.
 
 ## Future Improvements / To-Do
 
 - Add a test runner and write tests for the components and hooks.
-- Fix the remaining linting error in `example/form/utils.tsx`.
