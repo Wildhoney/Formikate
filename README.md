@@ -138,3 +138,17 @@ export default function App(): ReactElement {
     );
 }
 ```
+
+The `<Schematik />` component is a wrapper around Formik's `<Formik />` component. It accepts all the same props as Formik, with the addition of a `schematikConfig` prop.
+
+The `schematikConfig` prop is an object that can contain the following fields:
+
+-   `enabled`: A boolean field that controls whether Schematik's functionality is enabled. When `false`, `<Schematik />` behaves exactly like a standard `<Formik />` component.
+-   `step`: The current step of the form. This is `null` if no step is currently active.
+-   `steps`: An array of all defined steps in the form. Each step can be a string, number, or symbol.
+-   `getFields(values: unknown)`: A function that takes the current form values and returns an array of `Fields` (form field definitions) relevant to those values. This allows for dynamic field generation based on form state.
+-   `hasPrevious`: A boolean indicating whether there is a previous step to navigate to.
+-   `hasNext`: A boolean indicating whether there is a next step to navigate to.
+-   `handlePrevious()`: A function to programmatically navigate to the previous step in the form.
+-   `handleNext()`: A function to programmatically navigate to the next step in the form.
+-   `handleSet(step: Step)`: A function to programmatically set the current step of the form to a specific `Step` value.
