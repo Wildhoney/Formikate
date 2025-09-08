@@ -1,7 +1,13 @@
-import { useFormik, type FormikValues } from 'formik';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useFormik, type FormikValues, getIn } from 'formik';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as z from 'zod';
-import type { Field, Fields, SchematikProps, Step } from './types';
+import type {
+    Field,
+    Fields,
+    SchematikProps,
+    Step,
+    UseSchematikConfig,
+} from './types';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 
 /**
@@ -33,75 +39,23 @@ export function useController<Values extends FormikValues>({
         validationSchema: intoZodSchema(validationSchema),
     });
 
-    const [lastSubmitCount, setLastSubmitCount] = useState<number>(
-        form.submitCount,
-    );
-
     const fields = useMemo(
         () => schematikConfig?.getFields(form.values) ?? [],
         [form.values, schematikConfig],
     );
+
+    useExpose(form, fields, schematikConfig);
+    useRestore(fields, form, props.initialValues);
 
     useLayoutEffect(
         (): void => setValidationSchema(fields.filter(predicate)),
         [fields, form.values, predicate, schematikConfig, step],
     );
 
-    useLayoutEffect(() => {
-        if (form.submitCount > lastSubmitCount && !form.isValid) {
-            const earliest = takeEarliest(
-                form.errors,
-                fields,
-                schematikConfig?.steps,
-            );
-            if (earliest?.step != null)
-                schematikConfig?.handleSet(earliest.step);
-            setLastSubmitCount(form.submitCount);
-        }
-    }, [
-        lastSubmitCount,
-        schematikConfig,
-        form.values,
-        form.submitCount,
-        form.isValid,
-        form.errors,
-        fields,
-    ]);
-
     return useMemo(
         () => ({ state: { form, validationSchema, step } }),
         [validationSchema, form, step],
     );
-}
-
-/**
- * Returns the earliest field with an error based on step and field order.
- * @param errors - The Formik errors object.
- * @param fields - The array of all fields.
- * @param steps - The array of all steps.
- * @returns The first field with an error, or undefined if none exists.
- */
-function takeEarliest(
-    errors: FormikValues,
-    fields: Fields,
-    steps: Step[] = [],
-): Field | undefined {
-    return Object.keys(errors)
-        .map((name) => fields.find((field) => field.name === name))
-        .filter((field): field is Field => field !== undefined)
-        .sort((a, b) => {
-            const stepIndexA = a.step ? steps.indexOf(a.step) : -1;
-            const stepIndexB = b.step ? steps.indexOf(b.step) : -1;
-
-            if (stepIndexA !== stepIndexB) {
-                return stepIndexA - stepIndexB;
-            }
-
-            const arrayIndexA = fields.indexOf(a);
-            const arrayIndexB = fields.indexOf(b);
-
-            return arrayIndexA - arrayIndexB;
-        })[0];
 }
 
 /**
@@ -154,9 +108,111 @@ function usePredicate<Values extends FormikValues>(
  */
 function intoZodSchema(fields: Fields) {
     const validationSchema = fields.reduce<Record<string, z.ZodTypeAny>>(
-        (acc, field) => ({ ...acc, [field.name]: field.validate }),
+        (fields, field) => ({ ...fields, [field.name]: field.validate }),
         {},
     );
 
     return toFormikValidationSchema(z.object(validationSchema));
+}
+
+/**
+ * Returns the earliest field with an error based on step and field order.
+ * @param errors - The Formik errors object.
+ * @param fields - The array of all fields.
+ * @param steps - The array of all steps.
+ * @returns The first field with an error, or undefined if none exists.
+ */
+function takeEarliest(
+    errors: FormikValues,
+    fields: Fields,
+    steps: Step[] = [],
+): Field | undefined {
+    return Object.keys(errors)
+        .map((name) => fields.find((field) => field.name === name))
+        .filter((field): field is Field => field !== undefined)
+        .sort((a, b) => {
+            const stepIndexA = a.step ? steps.indexOf(a.step) : -1;
+            const stepIndexB = b.step ? steps.indexOf(b.step) : -1;
+
+            if (stepIndexA !== stepIndexB) {
+                return stepIndexA - stepIndexB;
+            }
+
+            const arrayIndexA = fields.indexOf(a);
+            const arrayIndexB = fields.indexOf(b);
+
+            return arrayIndexA - arrayIndexB;
+        })[0];
+}
+
+/**
+ * A React hook that restores the value of a field when it becomes disabled.
+ * @template Values - The type of form values.
+ * @param {Fields} fields - The array of all fields.
+ * @param {ReturnType<typeof useFormik<Values>>} form - The Formik bag.
+ * @param {Values} initialValues - The initial values of the form.
+ */
+function useRestore<Values extends FormikValues>(
+    fields: Fields,
+    form: ReturnType<typeof useFormik<Values>>,
+    initialValues: Values,
+) {
+    const previousFieldsRef = useRef<Fields>(fields);
+
+    useLayoutEffect(() => {
+        fields.forEach((field) => {
+            const oldField = previousFieldsRef.current.find(
+                (oldField) => oldField.name === field.name,
+            );
+            if (
+                oldField &&
+                oldField.enabled !== false &&
+                field.enabled === false
+            ) {
+                form.setFieldValue(
+                    field.name,
+                    getIn(initialValues, field.name),
+                );
+            }
+        });
+        previousFieldsRef.current = fields;
+    }, [fields, form, initialValues]);
+}
+
+/**
+ * A React hook that navigates to the earliest field with an error on form submission.
+ * @template Values - The type of form values.
+ * @param {ReturnType<typeof useFormik<Values>>} form - The Formik bag.
+ * @param {Fields} fields - The array of all fields.
+ * @param {UseSchematikConfig | undefined} schematikConfig - The configuration for the multi-step form.
+ */
+function useExpose<Values extends FormikValues>(
+    form: ReturnType<typeof useFormik<Values>>,
+    fields: Fields,
+    schematikConfig: UseSchematikConfig | undefined,
+) {
+    const [lastSubmitCount, setLastSubmitCount] = useState<number>(
+        form.submitCount,
+    );
+
+    useLayoutEffect(() => {
+        if (form.submitCount > lastSubmitCount && !form.isValid) {
+            const earliest = takeEarliest(
+                form.errors,
+                fields,
+                schematikConfig?.steps,
+            );
+            if (earliest?.step != null)
+                schematikConfig?.handleSet(earliest.step);
+            setLastSubmitCount(form.submitCount);
+        }
+    }, [
+        lastSubmitCount,
+        schematikConfig,
+        form.values,
+        form.submitCount,
+        form.isValid,
+        form.errors,
+        fields,
+    ]);
 }

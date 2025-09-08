@@ -97,11 +97,9 @@ export default function App(): ReactElement {
 
     const handleSubmit = useCallback(
         (values) => {
-            if (schematik.step === Steps.Review) {
+            if (schematik.step === Steps.Review)
                 return void console.log('Submitting form:', values);
-            }
-
-            schematik.handleNext();
+            else schematik.handleNext();
         },
         [schematik],
     );

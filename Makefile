@@ -1,6 +1,7 @@
-.PHONY: build dev install lint test typecheck fmt
+.PHONY: build dev install lint test typecheck fmt clean
 
 checks:
+	make fmt
 	make lint
 	make typecheck
 
@@ -16,8 +17,14 @@ build:
 lint:
 	npm run lint
 
+unit:
+	npm run test
+
 typecheck:
 	npx tsc --noEmit
 
 fmt:
 	npx prettier --write .
+
+clean:
+	rm -rf dist
