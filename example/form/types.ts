@@ -1,5 +1,5 @@
 export const enum Screens {
-  Name,
-  Address,
-  Review,
+    Name,
+    Address,
+    Review,
 }

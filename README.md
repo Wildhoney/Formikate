@@ -1,73 +1,129 @@
 ## Features
 
-- Dynamically render form fields using Zod or Yup schemas
-- Supports multi-step forms using the `screen` meta data
-- Fields that get hidden are reset using the `initialValues`
-- Navigate to the earliest screen that contains a validation error
-- Handles nested form fields using the dot notation
+- Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod) or [`yup`](https://github.com/jquense/yup) schemas
+- Supports multi-step forms using the `step` property
+- Fields that get hidden are reset using the `initialValues` object
+- Navigates to the earliest step that contains a validation error on submit
 
 ## Getting started
 
+Define your steps and fields:
+
 ```tsx
-import * as z from "zod";
-import { Formik } from "schematik";
-
-// ...
-
-enum Screen {
-  Details,
-  OTP,
+export const enum Screens {
+    Name,
+    Address,
+    Review,
 }
 
-export function validationSchema(values) {
-  return z.object({
-    name: z.string().meta({
-      screen: Screen.Details,
-      render({ handleChange, ...props }) {
-        return <Input.Text {...props} onChange={handleChange} />;
-      },
-    }),
-    age: z
-      .number()
-      .optional()
-      .meta({
-        screen: Screen.Details,
-        render({ handleChange, ...props }) {
-          return <Input.Number {...props} onChange={handleChange} />;
-        },
-      }),
-    telephone: z.number().meta({
-      screen: Screen.OTP,
-      render({ handleChange, ...props }) {
-        return <Input.TelephoneNumber {...props} onChange={handleChange} />;
-      },
-    }),
-  });
+import * as z from 'zod';
+import { field, Fields } from 'schematik';
+import { Screens } from './types';
+
+export function fields(): Fields {
+    return [
+        field({
+            name: 'name',
+            step: Screens.Name,
+            validate: z.string(),
+            element({ value, error, handleChange }) {
+                return (
+                    <div>
+                        <label htmlFor="name">Name</label>
+                        <input
+                            name="name"
+                            value={value}
+                            onChange={handleChange}
+                        />
+                        {error && <div>{error}</div>}
+                    </div>
+                );
+            },
+        }),
+        field({
+            name: 'age',
+            step: Screens.Name,
+            validate: z.string().min(2).max(100),
+            element({ value, error, handleChange }) {
+                return (
+                    <div>
+                        <label htmlFor="age">Age</label>
+                        <input
+                            name="age"
+                            value={value}
+                            onChange={handleChange}
+                        />
+                        {error && <div>{error}</div>}
+                    </div>
+                );
+            },
+        }),
+        field({
+            name: 'telephone',
+            step: Screens.Address,
+            validate: z.string().min(10).max(15),
+            element({ value, error, handleChange }) {
+                return (
+                    <div>
+                        <label htmlFor="telephone">Telephone</label>
+                        <input
+                            name="telephone"
+                            value={value}
+                            onChange={handleChange}
+                        />
+                        {error && <div>{error}</div>}
+                    </div>
+                );
+            },
+        }),
+    ];
 }
+```
 
-// ...
+Use the `Schematik` component and `useSchematik` hook in your application:
 
-export default function Form(): ReactElement {
-  return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-    >
-      {(props) => (
-        <form onSubmit={props.handleSubmit}>
-          {props.fields}
+```tsx
+import { ReactElement } from 'react';
+import { Schematik, useSchematik } from 'schematik';
+import { fields } from './utils';
+import { Screens } from './types';
 
-          <button type="button" onClick={props.handleBack}>
-            Back
-          </button>
+export default function App(): ReactElement {
+    const schematik = useSchematik({
+        fields,
+        screens: [Screens.Name, Screens.Address, Screens.Review],
+        initialScreen: Screens.Name,
+    });
 
-          <button type="submit">
-            {props.screen === Screen.OTP ? "Submit" : "Next"}
-          </button>
-        </form>
-      )}
-    </Formik>
-  );
+    return (
+        <Schematik
+            initialValues={{ name: '', age: '', telephone: '' }}
+            schematikConfig={schematik}
+            validateOnBlur={false}
+            validateOnChange={false}
+            onSubmit={console.log}
+        >
+            {(props) => (
+                <form onSubmit={props.handleSubmit}>
+                    <button
+                        type="button"
+                        disabled={!schematik.hasPrevious}
+                        onClick={schematik.handlePrevious}
+                    >
+                        Back
+                    </button>
+
+                    <button
+                        type="button"
+                        disabled={!schematik.hasNext}
+                        onClick={schematik.handleNext}
+                    >
+                        Next
+                    </button>
+                    <button type="submit">Submit</button>
+                </form>
+            )}
+        </Schematik>
+    );
 }
 ```
