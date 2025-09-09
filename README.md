@@ -11,9 +11,9 @@ Define your steps and fields:
 
 ```tsx
 import * as z from 'zod';
-import { field, Fields } from 'schematik';
+import { field, ValidationSchema } from 'formikate';
 
-const schema = z.object({
+const validationSchema = z.object({
     name: z.string().min(1).max(100),
     age: z.string().min(2).max(100),
     telephone: z.string().min(1).max(15),
@@ -25,16 +25,16 @@ enum Steps {
     Review,
 }
 
-type Values = z.infer<typeof schema>;
+type ValidationSchema = z.infer<typeof validationSchema>;
 
-export function useFields(): Fields {
+export function useValidationSchema(): ValidationSchema {
     return useCallback(
         (values: Values) => [
             field({
                 name: 'name',
                 step: Steps.Name,
                 enabled: true,
-                validate: schema.shape.name,
+                validate: validationSchema.shape.name,
                 element({ value, error, handleChange }) {
                     return <input name="name" value={value} onChange={handleChange} />;
                 },
@@ -43,7 +43,7 @@ export function useFields(): Fields {
                 name: 'age',
                 step: Steps.Name,
                 enabled: true,
-                validate: schema.shape.age,
+                validate: validationSchema.shape.age,
                 element({ value, error, handleChange }) {
                     return <input name="age" value={value} onChange={handleChange} />;
                 },
@@ -52,7 +52,7 @@ export function useFields(): Fields {
                 name: 'telephone',
                 step: Steps.Address,
                 enabled: true,
-                validate: schema.shape.telephone,
+                validate: validationSchema.shape.telephone,
                 element({ value, error, handleChange }) {
                     return <input name="telephone" value={value} onChange={handleChange} />;
                 },
@@ -63,40 +63,38 @@ export function useFields(): Fields {
 }
 ```
 
-Use the `Schematik` component and `useSchematik` hook in your application &ndash; the `<Schematik />` component is a wrapper around Formik's `<Formik />` component. It accepts all the same props as Formik, with the addition of a `schematikConfig` prop. Use the `<Fields />` component to render the applicable input fields.
+Use the `Form` component and `useValidationSchema` hook in your application &ndash; the `Form` component is a wrapper around `Formik` &ndash; it accepts all the same props as Formik, with the addition of a `validationSchema` prop. Use the `Fields` component to render the applicable input fields.
 
 ```tsx
 import { ReactElement, useCallback } from 'react';
-import { Fields, Schematik, useSchematik } from 'schematik';
+import { Form, Fields, useValidationSchema } from 'formikate';
 
 export default function App(): ReactElement {
-    const fields = useFields();
-
-    const schematik = useSchematik({
-        fields,
+    const formikate = useValidationSchema({
+        validationSchema: getValidationSchema(),
         steps: [Steps.Name, Steps.Address, Steps.Review],
         initialStep: Steps.Name,
     });
 
     const handleSubmit = useCallback(
         (values) => {
-            if (schematik.step === Steps.Review) return void console.log('Submitting form:', values);
-            else schematik.handleNext();
+            if (formikate.step === Steps.Review) return void console.log(values);
+            else formikate.handleNext();
         },
-        [schematik],
+        [formikate],
     );
 
     return (
-        <Schematik
+        <Form
             initialValues={{ name: '', age: '', telephone: '' }}
-            schematikConfig={schematik}
+            validationSchema={formikate}
             validateOnBlur={false}
             validateOnChange={false}
             onSubmit={handleSubmit}
         >
             {({ values, handleSubmit }) => (
                 <form onSubmit={handleSubmit}>
-                    {schematik.step !== Steps.Review ? (
+                    {formikate.step !== Steps.Review ? (
                         <Fields />
                     ) : (
                         <div>
@@ -105,14 +103,14 @@ export default function App(): ReactElement {
                         </div>
                     )}
 
-                    <button type="button" disabled={!schematik.hasPrevious} onClick={schematik.handlePrevious}>
+                    <button type="button" disabled={!formikate.hasPrevious} onClick={formikate.handlePrevious}>
                         Back
                     </button>
 
-                    <button type="submit">{schematik.step === Steps.Review ? 'Submit' : 'Next'}</button>
+                    <button type="submit">{formikate.step === Steps.Review ? 'Submit' : 'Next'}</button>
                 </form>
             )}
-        </Schematik>
+        </Form>
     );
 }
 ```

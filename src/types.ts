@@ -6,13 +6,13 @@ type FormikProps<Values extends FormikValues> = Omit<FormikConfig<Values>, 'vali
 
 export type Step = string | number | symbol;
 
-export type UseSchematikProps = {
-    fields(values: unknown): Fields;
+export type UseFormikateProps = {
     steps?: Step[];
     initialStep?: Step;
+    validationSchema(values: unknown): Fields;
 };
 
-export type UseSchematikConfig = {
+export type UseFormikateConfig = {
     step: null | Step;
     steps: Step[];
     getFields(values: unknown): Fields;
@@ -23,8 +23,8 @@ export type UseSchematikConfig = {
     handleSet(step: Step): void;
 };
 
-export type SchematikProps<Values extends FormikValues> = FormikProps<Values> & {
-    schematikConfig?: UseSchematikConfig;
+export type FormikateProps<Values extends FormikValues> = Omit<FormikProps<Values>, 'validationSchema'> & {
+    validationSchema?: UseFormikateConfig;
 };
 
 export type FieldProps<Values extends FormikValues> = ReturnType<typeof useFormik<Values>> & {

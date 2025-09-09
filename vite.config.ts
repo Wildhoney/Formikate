@@ -14,8 +14,8 @@ export default defineConfig({
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.tsx'),
-            name: 'Schematik',
-            fileName: 'schematik',
+            name: 'Formikate',
+            fileName: 'formikate',
         },
         rollupOptions: {
             external: ['react', 'react-dom', 'formik'],

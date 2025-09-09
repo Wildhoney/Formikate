@@ -1,33 +1,33 @@
 import { ReactElement, useCallback } from 'react';
-import { Fields, Schematik, useSchematik } from '../../src';
-import { fields, Steps } from './utils';
+import { Form, Fields, useValidationSchema } from '../../src/index.tsx';
+import { getValidationSchema, Steps } from './utils.tsx';
 
 export default function App(): ReactElement {
-    const schematik = useSchematik({
-        fields,
+    const validationSchema = useValidationSchema({
+        validationSchema: getValidationSchema,
         steps: [Steps.Name, Steps.Address, Steps.Review],
         initialStep: Steps.Name,
     });
 
     const handleSubmit = useCallback(
         (values) => {
-            if (schematik.step === Steps.Review) return void console.log('Submitting form:', values);
-            schematik.handleNext();
+            if (validationSchema.step === Steps.Review) return void console.log(values);
+            validationSchema.handleNext();
         },
-        [schematik],
+        [validationSchema],
     );
 
     return (
-        <Schematik
+        <Form
             initialValues={{ name: '', age: '', telephone: '' }}
-            schematikConfig={schematik}
+            validationSchema={validationSchema}
             validateOnBlur={false}
             validateOnChange={false}
             onSubmit={handleSubmit}
         >
             {(props) => (
                 <form onSubmit={props.handleSubmit}>
-                    {schematik.step !== Steps.Review ? (
+                    {validationSchema.step !== Steps.Review ? (
                         <Fields />
                     ) : (
                         <div>
@@ -36,13 +36,17 @@ export default function App(): ReactElement {
                         </div>
                     )}
 
-                    <button type="button" disabled={!schematik.hasPrevious} onClick={schematik.handlePrevious}>
+                    <button
+                        type="button"
+                        disabled={!validationSchema.hasPrevious}
+                        onClick={validationSchema.handlePrevious}
+                    >
                         Back
                     </button>
 
-                    <button type="submit">{schematik.step === Steps.Review ? 'Submit' : 'Next'}</button>
+                    <button type="submit">{validationSchema.step === Steps.Review ? 'Submit' : 'Next'}</button>
                 </form>
             )}
-        </Schematik>
+        </Form>
     );
 }

@@ -11,7 +11,7 @@ import {
 } from 'react';
 import * as z from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import type { Field, FieldProps, Fields, SchematikProps, Step, UseSchematikConfig } from './types.ts';
+import type { Field, FieldProps, Fields, FormikateProps, Step, UseFormikateConfig } from './types.ts';
 
 export const FieldsContext = createContext<Fields | null>(null);
 
@@ -20,16 +20,16 @@ export const FieldsContext = createContext<Fields | null>(null);
  * It manages the form's validation schema based on the current step.
  *
  * @template Values - The type of form values.
- * @param {SchematikProps<Values>} props - The properties for the Schematik form, including initial values and schematik configuration.
+ * @param {FormikateProps<Values>} props - The properties for the Formikate form, including initial values and formikate configuration.
  * @returns {{ state: { form: import("formik").FormikContextType<Values>; validationSchema: Fields; step: import("./types").Step | null | undefined; } }} An object containing the form state, validation schema, and current step.
  */
-export function useController<Values extends FormikValues>({ schematikConfig, ...props }: SchematikProps<Values>) {
-    const step = schematikConfig?.step;
-    const predicate = usePredicate(schematikConfig);
+export function useController<Values extends FormikValues>(props: FormikateProps<Values>) {
+    const step = props.validationSchema?.step;
+    const predicate = usePredicate(props.validationSchema);
 
     const initialFields = useMemo(
-        () => schematikConfig?.getFields(props.initialValues) ?? [],
-        [schematikConfig, props.initialValues],
+        () => props.validationSchema?.getFields(props.initialValues) ?? [],
+        [props.validationSchema, props.initialValues],
     );
 
     const [validationSchema, setValidationSchema] = useState<Fields>(initialFields.filter(predicate));
@@ -39,14 +39,17 @@ export function useController<Values extends FormikValues>({ schematikConfig, ..
         validationSchema: intoZodSchema(validationSchema),
     });
 
-    const fields = useMemo(() => schematikConfig?.getFields(form.values) ?? [], [form.values, schematikConfig]);
+    const fields = useMemo(
+        () => props.validationSchema?.getFields(form.values) ?? [],
+        [form.values, props.validationSchema],
+    );
 
-    useExpose(form, fields, schematikConfig);
+    useExpose(form, fields, props.validationSchema);
     useRestore(fields, form, props.initialValues);
 
     useLayoutEffect(
         (): void => setValidationSchema(fields.filter(predicate)),
-        [fields, form.values, predicate, schematikConfig, step],
+        [fields, form.values, predicate, props.validationSchema, step],
     );
 
     return useMemo(() => ({ state: { form, validationSchema, step } }), [validationSchema, form, step]);
@@ -57,18 +60,18 @@ export function useController<Values extends FormikValues>({ schematikConfig, ..
  * based on the current step in a multi-step form.
  *
  * @template Values - The type of form values.
- * @param {SchematikProps<Values>["schematikConfig"]} schematikConfig - The configuration for the multi-step form.
+ * @param {FormikateProps<Values>["validationSchema"]} validationSchema - The configuration for the multi-step form.
  * @returns {(field: Field) => boolean} A predicate function that returns true if the field should be active on the current step.
  */
-function usePredicate<Values extends FormikValues>(schematikConfig: SchematikProps<Values>['schematikConfig']) {
+function usePredicate<Values extends FormikValues>(validationSchema: FormikateProps<Values>['validationSchema']) {
     return useCallback(
         (field: Field) => {
             if (field.enabled === false) return false;
 
-            const steps = schematikConfig?.steps ?? [];
+            const steps = validationSchema?.steps ?? [];
             if (steps.length === 0) return true;
 
-            const currentStep = schematikConfig?.step;
+            const currentStep = validationSchema?.step;
             if (currentStep == null) return field.step === undefined;
 
             const index = field.step != null ? steps.indexOf(field.step) : -1;
@@ -76,12 +79,12 @@ function usePredicate<Values extends FormikValues>(schematikConfig: SchematikPro
 
             return index <= steps.indexOf(currentStep);
         },
-        [schematikConfig?.steps, schematikConfig?.step],
+        [validationSchema?.steps, validationSchema?.step],
     );
 }
 
 /**
- * Converts an array of Schematik field definitions into a Zod schema
+ * Converts an array of Formikate field definitions into a Zod schema
  * that can be used by Formik for validation.
  *
  * @param {Fields} fields - An array of field definitions.
@@ -152,22 +155,22 @@ function useRestore<Values extends FormikValues>(
  * @template Values - The type of form values.
  * @param {ReturnType<typeof useFormik<Values>>} form - The Formik bag.
  * @param {Fields} fields - The array of all fields.
- * @param {UseSchematikConfig | undefined} schematikConfig - The configuration for the multi-step form.
+ * @param {UseFormikateConfig | undefined} validationSchema - The configuration for the multi-step form.
  */
 function useExpose<Values extends FormikValues>(
     form: ReturnType<typeof useFormik<Values>>,
     fields: Fields,
-    schematikConfig: UseSchematikConfig | undefined,
+    validationSchema: UseFormikateConfig | undefined,
 ) {
     const [lastSubmitCount, setLastSubmitCount] = useState<number>(form.submitCount);
 
     useLayoutEffect(() => {
         if (form.submitCount > lastSubmitCount && !form.isValid) {
-            const earliest = takeEarliest(form.errors, fields, schematikConfig?.steps);
-            if (earliest?.step != null) schematikConfig?.handleSet(earliest.step);
+            const earliest = takeEarliest(form.errors, fields, validationSchema?.steps);
+            if (earliest?.step != null) validationSchema?.handleSet(earliest.step);
             setLastSubmitCount(form.submitCount);
         }
-    }, [lastSubmitCount, schematikConfig, form.values, form.submitCount, form.isValid, form.errors, fields]);
+    }, [lastSubmitCount, validationSchema, form.values, form.submitCount, form.isValid, form.errors, fields]);
 }
 
 /**

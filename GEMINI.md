@@ -1,6 +1,6 @@
-# Gemini's Notes for the Schematik Repository
+# Gemini's Notes for the Formikate Repository
 
-This document contains notes and observations about the Schematik repository to assist with future development.
+This document contains notes and observations about the Formikate repository to assist with future development.
 
 ## Project Overview
 
@@ -16,7 +16,7 @@ This document contains notes and observations about the Schematik repository to 
     - `index.tsx`: Main entry point.
     - `types.ts`: Core type definitions for the application.
     - `utils.ts`: Utility functions and custom hooks.
-- `example/`: Example usage of the Schematik library.
+- `example/`: Example usage of the Formikate library.
 - `public/`: Static assets.
 - `dist/`: Build output directory.
 
@@ -45,7 +45,7 @@ A `Makefile` is also available for convenience:
 
 - **Type Definitions:** Core types are centralized in `src/types.ts`.
 - **Hooks:** Custom hooks are located in `src/utils.ts`.
-- **Generics:** The core components and hooks like `useController` and `SchematikProps` are generic. The example in `example/form/utils.tsx` uses `zod` and `z.infer<typeof schema>` for strong-typing.
+- **Generics:** The core components and hooks like `useController` and `FormikateProps` are generic. The example in `example/form/utils.tsx` uses `zod` and `z.infer<typeof schema>` for strong-typing.
 - **Styling:** The project uses `.prettierrc` for code formatting.
 - **Linting:** The project uses `eslint.config.mjs`.
 

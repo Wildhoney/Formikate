@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { field, Fields } from '../../src';
+import { field, ValidationSchema } from '../../src';
 
 export const enum Steps {
     Name,
@@ -7,18 +7,18 @@ export const enum Steps {
     Review,
 }
 
-const schema = z.object({
+const validationSchema = z.object({
     name: z.string().min(1).max(100),
     age: z.string().min(2).max(100),
     telephone: z.string().min(1).max(15),
 });
 
-export function fields(_values: z.infer<typeof schema>): Fields {
+export function getValidationSchema(_values: z.infer<typeof validationSchema>): ValidationSchema {
     return [
         field({
             name: 'name',
             step: Steps.Name,
-            validate: schema.shape.name,
+            validate: validationSchema.shape.name,
             element({ value, error, handleChange }) {
                 return (
                     <div>
@@ -32,7 +32,7 @@ export function fields(_values: z.infer<typeof schema>): Fields {
         field({
             name: 'age',
             step: Steps.Name,
-            validate: schema.shape.age,
+            validate: validationSchema.shape.age,
             element({ value, error, handleChange }) {
                 return (
                     <div>
@@ -46,7 +46,7 @@ export function fields(_values: z.infer<typeof schema>): Fields {
         field({
             name: 'telephone',
             step: Steps.Address,
-            validate: schema.shape.telephone,
+            validate: validationSchema.shape.telephone,
             element({ value, error, handleChange }) {
                 return (
                     <div>

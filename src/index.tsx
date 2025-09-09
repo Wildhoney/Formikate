@@ -3,28 +3,30 @@ import { FormikContext, useFormikContext, type FormikValues } from 'formik';
 import type {
     Field,
     Fields,
-    SchematikProps,
+    FormikateProps,
     Step,
-    UseSchematikConfig,
-    UseSchematikProps,
+    UseFormikateConfig,
+    UseFormikateProps,
     ValidationSchemaField,
 } from './types.ts';
 import { useController, renderFields, renderInputs, FieldsContext } from './utils.tsx';
 
+export type { Fields as ValidationSchema } from './types.ts';
+
 /**
  * Renders the form fields based on the current context.
  * @returns {ReactElement} The rendered form fields.
- * @throws {Error} If used outside of a Schematik provider.
+ * @throws {Error} If used outside of a Formikate provider.
  * @example
- * <Schematik {...props}>
+ * <Form {...props}>
  *   <Fields />
- * </Schematik>
+ * </Form>
  */
 export function Fields<Values extends FormikValues>(): ReactElement {
     const fields = useContext(FieldsContext);
     const formik = useFormikContext<Values>();
 
-    if (!fields) throw new Error('Fields must be used within a Schematik provider');
+    if (!fields) throw new Error('Fields must be used within a Formikate provider');
 
     return <>{renderInputs<Values>(fields, formik)}</>;
 }
@@ -47,17 +49,21 @@ export function field<T>(field: ValidationSchemaField<T>): Field {
 
 /**
  * A hook to manage the schematic form state.
- * @param {UseSchematikProps} props - The properties for the hook.
- * @returns {UseSchematikConfig} The schematic form configuration.
+ * @param {UseFormikateProps} props - The properties for the hook.
+ * @returns {UseFormikateConfig} The schematic form configuration.
  * @example
- * const schematikConfig = useSchematik({
+ * const validationSchema = useValidationSchema({
  *   fields,
  *   steps,
  *   initialStep: steps[0],
  * });
  */
 // eslint-disable-next-line react-refresh/only-export-components
-export function useSchematik({ fields, initialStep, steps = [] }: UseSchematikProps): UseSchematikConfig {
+export function useValidationSchema({
+    validationSchema,
+    initialStep,
+    steps = [],
+}: UseFormikateProps): UseFormikateConfig {
     const [step, setStep] = useState<null | Step>(initialStep ?? null);
 
     return useMemo(() => {
@@ -74,30 +80,30 @@ export function useSchematik({ fields, initialStep, steps = [] }: UseSchematikPr
             steps,
             hasPrevious,
             hasNext,
-            getFields: fields,
+            getFields: validationSchema,
             handlePrevious,
             handleNext,
             handleSet,
         };
-    }, [fields, step, steps]);
+    }, [validationSchema, step, steps]);
 }
 
 /**
- * The main Schematik component.
- * @param {SchematikProps<Values>} props - The properties for the component.
- * @returns {ReactElement} The rendered Schematik component.
+ * The main Formikate component.
+ * @param {FormikateProps<Values>} props - The properties for the component.
+ * @returns {ReactElement} The rendered Form component.
  * @example
- * <Schematik {...props}>
+ * <Form {...props}>
  *  <Fields />
- * </Schematik>
+ * </Form>
  */
-export function Schematik<Values extends FormikValues>(props: SchematikProps<Values>): ReactElement {
+export function Form<Values extends FormikValues>(props: FormikateProps<Values>): ReactElement {
     const controller = useController(props);
 
     const visibleFields = renderFields(
         controller.state.validationSchema,
         controller.state.step,
-        props.schematikConfig?.steps ?? [],
+        props.validationSchema?.steps ?? [],
     );
 
     return (
