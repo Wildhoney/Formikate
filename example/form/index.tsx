@@ -1,5 +1,5 @@
 import { ReactElement, useCallback } from 'react';
-import { Schematik, useSchematik } from '../../src';
+import { Fields, Schematik, useSchematik } from '../../src';
 import { fields, Steps } from './utils';
 
 export default function App(): ReactElement {
@@ -11,8 +11,7 @@ export default function App(): ReactElement {
 
     const handleSubmit = useCallback(
         (values) => {
-            if (schematik.step === Steps.Review)
-                return void console.log('Submitting form:', values);
+            if (schematik.step === Steps.Review) return void console.log('Submitting form:', values);
             schematik.handleNext();
         },
         [schematik],
@@ -28,24 +27,20 @@ export default function App(): ReactElement {
         >
             {(props) => (
                 <form onSubmit={props.handleSubmit}>
-                    {schematik.step === Steps.Review && (
+                    {schematik.step !== Steps.Review ? (
+                        <Fields />
+                    ) : (
                         <div>
                             <h2>Review your information</h2>
                             <pre>{JSON.stringify(props.values, null, 2)}</pre>
                         </div>
                     )}
 
-                    <button
-                        type="button"
-                        disabled={!schematik.hasPrevious}
-                        onClick={schematik.handlePrevious}
-                    >
+                    <button type="button" disabled={!schematik.hasPrevious} onClick={schematik.handlePrevious}>
                         Back
                     </button>
 
-                    <button type="submit">
-                        {schematik.step === Steps.Review ? 'Submit' : 'Next'}
-                    </button>
+                    <button type="submit">{schematik.step === Steps.Review ? 'Submit' : 'Next'}</button>
                 </form>
             )}
         </Schematik>

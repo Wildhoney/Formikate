@@ -1,0 +1,26 @@
+# Dev
+.vscode/
+.idea/
+.git/
+.github/
+
+# Dependency directories
+node_modules/
+
+# Config files
+.prettierrc
+eslint.config.js
+GEMINI.md
+index.html
+Makefile
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+vitest.config.ts
+yarn.lock
+
+# Source and example files
+example/
+public/
+src/

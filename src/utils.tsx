@@ -1,4 +1,4 @@
-import { useFormik, type FormikValues, getIn } from 'formik';
+import { useFormik, type FormikContextType, type FormikValues, getIn } from 'formik';
 import {
     useCallback,
     useLayoutEffect,
@@ -7,16 +7,13 @@ import {
     useState,
     Fragment,
     type ReactElement,
+    createContext,
 } from 'react';
 import * as z from 'zod';
-import type {
-    Field,
-    Fields,
-    SchematikProps,
-    Step,
-    UseSchematikConfig,
-} from './types';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
+import type { Field, FieldProps, Fields, SchematikProps, Step, UseSchematikConfig } from './types.ts';
+
+export const FieldsContext = createContext<Fields | null>(null);
 
 /**
  * A React hook that controllers the logic of a multi-step form powered by Formik.
@@ -26,10 +23,7 @@ import { toFormikValidationSchema } from 'zod-formik-adapter';
  * @param {SchematikProps<Values>} props - The properties for the Schematik form, including initial values and schematik configuration.
  * @returns {{ state: { form: import("formik").FormikContextType<Values>; validationSchema: Fields; step: import("./types").Step | null | undefined; } }} An object containing the form state, validation schema, and current step.
  */
-export function useController<Values extends FormikValues>({
-    schematikConfig,
-    ...props
-}: SchematikProps<Values>) {
+export function useController<Values extends FormikValues>({ schematikConfig, ...props }: SchematikProps<Values>) {
     const step = schematikConfig?.step;
     const predicate = usePredicate(schematikConfig);
 
@@ -38,19 +32,14 @@ export function useController<Values extends FormikValues>({
         [schematikConfig, props.initialValues],
     );
 
-    const [validationSchema, setValidationSchema] = useState<Fields>(
-        initialFields.filter(predicate),
-    );
+    const [validationSchema, setValidationSchema] = useState<Fields>(initialFields.filter(predicate));
 
     const form = useFormik({
         ...props,
         validationSchema: intoZodSchema(validationSchema),
     });
 
-    const fields = useMemo(
-        () => schematikConfig?.getFields(form.values) ?? [],
-        [form.values, schematikConfig],
-    );
+    const fields = useMemo(() => schematikConfig?.getFields(form.values) ?? [], [form.values, schematikConfig]);
 
     useExpose(form, fields, schematikConfig);
     useRestore(fields, form, props.initialValues);
@@ -60,10 +49,7 @@ export function useController<Values extends FormikValues>({
         [fields, form.values, predicate, schematikConfig, step],
     );
 
-    return useMemo(
-        () => ({ state: { form, validationSchema, step } }),
-        [validationSchema, form, step],
-    );
+    return useMemo(() => ({ state: { form, validationSchema, step } }), [validationSchema, form, step]);
 }
 
 /**
@@ -74,34 +60,21 @@ export function useController<Values extends FormikValues>({
  * @param {SchematikProps<Values>["schematikConfig"]} schematikConfig - The configuration for the multi-step form.
  * @returns {(field: Field) => boolean} A predicate function that returns true if the field should be active on the current step.
  */
-function usePredicate<Values extends FormikValues>(
-    schematikConfig: SchematikProps<Values>['schematikConfig'],
-) {
+function usePredicate<Values extends FormikValues>(schematikConfig: SchematikProps<Values>['schematikConfig']) {
     return useCallback(
         (field: Field) => {
-            if (field.enabled === false) {
-                return false;
-            }
+            if (field.enabled === false) return false;
 
             const steps = schematikConfig?.steps ?? [];
-            if (steps.length === 0) {
-                return true;
-            }
+            if (steps.length === 0) return true;
 
             const currentStep = schematikConfig?.step;
-            if (currentStep == null) {
-                return field.step === undefined;
-            }
+            if (currentStep == null) return field.step === undefined;
 
-            const currentIndex = steps.indexOf(currentStep);
-            const fieldIndex =
-                field.step != null ? steps.indexOf(field.step) : -1;
+            const index = field.step != null ? steps.indexOf(field.step) : -1;
+            if (index === -1) return false;
 
-            if (fieldIndex === -1) {
-                return false;
-            }
-
-            return fieldIndex <= currentIndex;
+            return index <= steps.indexOf(currentStep);
         },
         [schematikConfig?.steps, schematikConfig?.step],
     );
@@ -130,11 +103,7 @@ function intoZodSchema(fields: Fields) {
  * @param steps - The array of all steps.
  * @returns The first field with an error, or undefined if none exists.
  */
-function takeEarliest(
-    errors: FormikValues,
-    fields: Fields,
-    steps: Step[] = [],
-): Field | undefined {
+function takeEarliest(errors: FormikValues, fields: Fields, steps: Step[] = []): Field | undefined {
     return Object.keys(errors)
         .map((name) => fields.find((field) => field.name === name))
         .filter((field): field is Field => field !== undefined)
@@ -169,18 +138,9 @@ function useRestore<Values extends FormikValues>(
 
     useLayoutEffect(() => {
         fields.forEach((field) => {
-            const oldField = previousFieldsRef.current.find(
-                (oldField) => oldField.name === field.name,
-            );
-            if (
-                oldField &&
-                oldField.enabled !== false &&
-                field.enabled === false
-            ) {
-                form.setFieldValue(
-                    field.name,
-                    getIn(initialValues, field.name),
-                );
+            const oldField = previousFieldsRef.current.find((oldField) => oldField.name === field.name);
+            if (oldField && oldField.enabled !== false && field.enabled === false) {
+                form.setFieldValue(field.name, getIn(initialValues, field.name));
             }
         });
         previousFieldsRef.current = fields;
@@ -199,30 +159,15 @@ function useExpose<Values extends FormikValues>(
     fields: Fields,
     schematikConfig: UseSchematikConfig | undefined,
 ) {
-    const [lastSubmitCount, setLastSubmitCount] = useState<number>(
-        form.submitCount,
-    );
+    const [lastSubmitCount, setLastSubmitCount] = useState<number>(form.submitCount);
 
     useLayoutEffect(() => {
         if (form.submitCount > lastSubmitCount && !form.isValid) {
-            const earliest = takeEarliest(
-                form.errors,
-                fields,
-                schematikConfig?.steps,
-            );
-            if (earliest?.step != null)
-                schematikConfig?.handleSet(earliest.step);
+            const earliest = takeEarliest(form.errors, fields, schematikConfig?.steps);
+            if (earliest?.step != null) schematikConfig?.handleSet(earliest.step);
             setLastSubmitCount(form.submitCount);
         }
-    }, [
-        lastSubmitCount,
-        schematikConfig,
-        form.values,
-        form.submitCount,
-        form.isValid,
-        form.errors,
-        fields,
-    ]);
+    }, [lastSubmitCount, schematikConfig, form.values, form.submitCount, form.isValid, form.errors, fields]);
 }
 
 /**
@@ -234,18 +179,10 @@ function useExpose<Values extends FormikValues>(
  * @param steps An array of all defined steps in the form.
  * @returns An array of fields that are visible for the current step.
  */
-export function renderFields(
-    validationSchema: Fields,
-    currentStep: Step | null | undefined,
-    steps: Step[],
-): Fields {
+export function renderFields(validationSchema: Fields, currentStep: Step | null | undefined, steps: Step[]): Fields {
     return validationSchema.filter((field) => {
-        if (steps.length === 0) {
-            return true;
-        }
-        if (currentStep == null) {
-            return field.step === undefined;
-        }
+        if (steps.length === 0) return true;
+        if (currentStep == null) return field.step === undefined;
         return field.step === currentStep;
     });
 }
@@ -260,7 +197,7 @@ export function renderFields(
  */
 export function renderInputs<Values extends FormikValues>(
     fields: Fields,
-    form: ReturnType<typeof useFormik<Values>>,
+    form: FormikContextType<Values>,
 ): ReactElement[] {
     return fields.map((field) => (
         <Fragment key={field.name}>
@@ -269,7 +206,7 @@ export function renderInputs<Values extends FormikValues>(
                 optional: field.validate.safeParse(undefined).success,
                 value: getIn(form.values, field.name),
                 error: getIn(form.errors, field.name),
-            })}
+            } as FieldProps<Values>)}
         </Fragment>
     ));
 }

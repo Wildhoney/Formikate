@@ -11,7 +11,6 @@ Define your steps and fields:
 
 ```tsx
 import * as z from 'zod';
-import { Steps } from './types';
 import { field, Fields } from 'schematik';
 
 const schema = z.object({
@@ -20,75 +19,59 @@ const schema = z.object({
     telephone: z.string().min(1).max(15),
 });
 
-export function fields(values: z.infer<typeof schema>): Fields {
-    return [
-        field({
-            name: 'name',
-            step: Steps.Name,
-            validate: schema.shape.name,
-            element({ value, error, handleChange }) {
-                return (
-                    <div>
-                        <label htmlFor="name">Name</label>
-                        <input
-                            name="name"
-                            value={value}
-                            onChange={handleChange}
-                        />
-                        {error && <div>{error}</div>}
-                    </div>
-                );
-            },
-        }),
-        field({
-            name: 'age',
-            step: Steps.Name,
-            validate: schema.shape.age,
-            element({ value, error, handleChange }) {
-                return (
-                    <div>
-                        <label htmlFor="age">Age</label>
-                        <input
-                            name="age"
-                            value={value}
-                            onChange={handleChange}
-                        />
-                        {error && <div>{error}</div>}
-                    </div>
-                );
-            },
-        }),
-        field({
-            name: 'telephone',
-            step: Steps.Address,
-            validate: schema.shape.telephone,
-            element({ value, error, handleChange }) {
-                return (
-                    <div>
-                        <label htmlFor="telephone">Telephone</label>
-                        <input
-                            name="telephone"
-                            value={value}
-                            onChange={handleChange}
-                        />
-                        {error && <div>{error}</div>}
-                    </div>
-                );
-            },
-        }),
-    ];
+enum Steps {
+    Name,
+    Address,
+    Review,
+}
+
+type Values = z.infer<typeof schema>;
+
+export function useFields(): Fields {
+    return useCallback(
+        (values: Values) => [
+            field({
+                name: 'name',
+                step: Steps.Name,
+                enabled: true,
+                validate: schema.shape.name,
+                element({ value, error, handleChange }) {
+                    return <input name="name" value={value} onChange={handleChange} />;
+                },
+            }),
+            field({
+                name: 'age',
+                step: Steps.Name,
+                enabled: true,
+                validate: schema.shape.age,
+                element({ value, error, handleChange }) {
+                    return <input name="age" value={value} onChange={handleChange} />;
+                },
+            }),
+            field({
+                name: 'telephone',
+                step: Steps.Address,
+                enabled: true,
+                validate: schema.shape.telephone,
+                element({ value, error, handleChange }) {
+                    return <input name="telephone" value={value} onChange={handleChange} />;
+                },
+            }),
+        ],
+        [],
+    );
 }
 ```
 
-Use the `Schematik` component and `useSchematik` hook in your application:
+Use the `Schematik` component and `useSchematik` hook in your application &ndash; the `<Schematik />` component is a wrapper around Formik's `<Formik />` component. It accepts all the same props as Formik, with the addition of a `schematikConfig` prop. Use the `<Fields />` component to render the applicable input fields.
 
 ```tsx
 import { ReactElement, useCallback } from 'react';
-import { Schematik, useSchematik } from 'schematik';
-import { fields } from './utils';
-import { Steps } from './types';
+import { Fields, Schematik, useSchematik } from 'schematik';
 
 export default function App(): ReactElement {
+    const fields = useFields();
+
     const schematik = useSchematik({
         fields,
         steps: [Steps.Name, Steps.Address, Steps.Review],
@@ -97,8 +80,7 @@ export default function App(): ReactElement {
 
     const handleSubmit = useCallback(
         (values) => {
-            if (schematik.step === Steps.Review)
-                return void console.log('Submitting form:', values);
+            if (schematik.step === Steps.Review) return void console.log('Submitting form:', values);
             else schematik.handleNext();
         },
         [schematik],
@@ -112,43 +94,25 @@ export default function App(): ReactElement {
             validateOnChange={false}
             onSubmit={handleSubmit}
         >
-            {(props) => (
-                <form onSubmit={props.handleSubmit}>
-                    {schematik.step === Steps.Review && (
+            {({ values, handleSubmit }) => (
+                <form onSubmit={handleSubmit}>
+                    {schematik.step !== Steps.Review ? (
+                        <Fields />
+                    ) : (
                         <div>
                             <h2>Review your information</h2>
-                            <pre>{JSON.stringify(props.values, null, 2)}</pre>
+                            <pre>{JSON.stringify(values, null, 2)}</pre>
                         </div>
                     )}
 
-                    <button
-                        type="button"
-                        disabled={!schematik.hasPrevious}
-                        onClick={schematik.handlePrevious}
-                    >
+                    <button type="button" disabled={!schematik.hasPrevious} onClick={schematik.handlePrevious}>
                         Back
                     </button>
 
-                    <button type="submit">
-                        {schematik.step === Steps.Review ? 'Submit' : 'Next'}
-                    </button>
+                    <button type="submit">{schematik.step === Steps.Review ? 'Submit' : 'Next'}</button>
                 </form>
             )}
         </Schematik>
     );
 }
 ```
-
-The `<Schematik />` component is a wrapper around Formik's `<Formik />` component. It accepts all the same props as Formik, with the addition of a `schematikConfig` prop.
-
-The `schematikConfig` prop is an object that can contain the following fields:
-
-- `enabled`: A boolean field that controls whether Schematik's functionality is enabled. When `false`, `<Schematik />` behaves exactly like a standard `<Formik />` component.
-- `step`: The current step of the form. This is `null` if no step is currently active.
-- `steps`: An array of all defined steps in the form. Each step can be a string, number, or symbol.
-- `getFields(values: unknown)`: A function that takes the current form values and returns an array of `Fields` (form field definitions) relevant to those values. This allows for dynamic field generation based on form state.
-- `hasPrevious`: A boolean indicating whether there is a previous step to navigate to.
-- `hasNext`: A boolean indicating whether there is a next step to navigate to.
-- `handlePrevious()`: A function to programmatically navigate to the previous step in the form.
-- `handleNext()`: A function to programmatically navigate to the next step in the form.
-- `handleSet(step: Step)`: A function to programmatically set the current step of the form to a specific `Step` value.
