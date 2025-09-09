@@ -1,3 +1,7 @@
+![Formikate](media/logo.png)
+
+🪚 Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
+
 ## Features
 
 - Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod) or [`yup`](https://github.com/jquense/yup) schemas
@@ -63,14 +67,14 @@ export function useValidationSchema(): ValidationSchema {
 }
 ```
 
-Use the `Form` component and `useValidationSchema` hook in your application &ndash; the `Form` component is a wrapper around `Formik` &ndash; it accepts all the same props as Formik, with the addition of a `validationSchema` prop. Use the `Fields` component to render the applicable input fields.
+Use the `Form` component and `useValidationSchema` hook in your application &ndash; the `Form` component is a wrapper around `Formik` &ndash; it accepts all the same props as Formik however the `validationSchema` prop should be passed from the `useValidationSchema` invocation. Use the `Fields` component to render the applicable input fields within the form.
 
 ```tsx
 import { ReactElement, useCallback } from 'react';
 import { Form, Fields, useValidationSchema } from 'formikate';
 
 export default function App(): ReactElement {
-    const formikate = useValidationSchema({
+    const validationSchema = useValidationSchema({
         validationSchema: getValidationSchema(),
         steps: [Steps.Name, Steps.Address, Steps.Review],
         initialStep: Steps.Name,
@@ -78,7 +82,7 @@ export default function App(): ReactElement {
 
     const handleSubmit = useCallback(
         (values) => {
-            if (formikate.step === Steps.Review) return void console.log(values);
+            if (validationSchema.step === Steps.Review) return void console.log(values);
             else formikate.handleNext();
         },
         [formikate],
@@ -87,14 +91,14 @@ export default function App(): ReactElement {
     return (
         <Form
             initialValues={{ name: '', age: '', telephone: '' }}
-            validationSchema={formikate}
+            validationSchema={validationSchema}
             validateOnBlur={false}
             validateOnChange={false}
             onSubmit={handleSubmit}
         >
             {({ values, handleSubmit }) => (
                 <form onSubmit={handleSubmit}>
-                    {formikate.step !== Steps.Review ? (
+                    {validationSchema.step !== Steps.Review ? (
                         <Fields />
                     ) : (
                         <div>
@@ -103,11 +107,15 @@ export default function App(): ReactElement {
                         </div>
                     )}
 
-                    <button type="button" disabled={!formikate.hasPrevious} onClick={formikate.handlePrevious}>
+                    <button
+                        type="button"
+                        disabled={!validationSchema.hasPrevious}
+                        onClick={validationSchema.handlePrevious}
+                    >
                         Back
                     </button>
 
-                    <button type="submit">{formikate.step === Steps.Review ? 'Submit' : 'Next'}</button>
+                    <button type="submit">{validationSchema.step === Steps.Review ? 'Submit' : 'Next'}</button>
                 </form>
             )}
         </Form>
