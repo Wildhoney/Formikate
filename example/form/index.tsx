@@ -1,50 +1,64 @@
+import * as z from 'zod';
+import { Form, Field, useFormikate } from '../../src';
 import { ReactElement, useCallback } from 'react';
-import { Form, Fields, useValidationSchema } from '../../src/index.tsx';
-import { getValidationSchema, Steps } from './utils.tsx';
 
-export default function App(): ReactElement {
-    const validationSchema = useValidationSchema({
-        validationSchema: getValidationSchema,
-        steps: [Steps.Name, Steps.Address, Steps.Review],
+const enum Steps {
+    Name,
+    Address,
+    Review,
+}
+
+const schema = z.object({
+    name: z.string().min(1).max(100),
+    age: z.string().min(2).max(100),
+    telephone: z.string().min(1).max(15),
+});
+
+type Schema = z.infer<typeof schema>;
+
+export default function Details(): ReactElement {
+    const formikate = useFormikate({
         initialStep: Steps.Name,
+        steps: [Steps.Name, Steps.Address, Steps.Review],
     });
 
     const handleSubmit = useCallback(
-        (values) => {
-            if (validationSchema.step === Steps.Review) return void console.log(values);
-            validationSchema.handleNext();
+        (values: Schema) => {
+            formikate.next();
         },
-        [validationSchema],
+        [formikate],
     );
 
     return (
         <Form
             initialValues={{ name: '', age: '', telephone: '' }}
-            validationSchema={validationSchema}
             validateOnBlur={false}
             validateOnChange={false}
+            validationSchema={formikate}
             onSubmit={handleSubmit}
         >
             {(props) => (
                 <form onSubmit={props.handleSubmit}>
-                    {validationSchema.step !== Steps.Review ? (
-                        <Fields />
-                    ) : (
-                        <div>
-                            <h2>Review your information</h2>
-                            <pre>{JSON.stringify(props.values, null, 2)}</pre>
-                        </div>
-                    )}
+                    <Field name="name" step={Steps.Name} validate={schema.shape.name}>
+                        {/* <Name /> */}
+                        <div>Name</div>
+                    </Field>
 
-                    <button
-                        type="button"
-                        disabled={!validationSchema.hasPrevious}
-                        onClick={validationSchema.handlePrevious}
-                    >
+                    <Field name="age" step={Steps.Name} validate={schema.shape.age}>
+                        {/* <Age /> */}
+                        <div>Age</div>
+                    </Field>
+
+                    <Field name="telephone" step={Steps.Address} validate={schema.shape.telephone}>
+                        {/* <Telephone /> */}
+                        <div>Telephone</div>
+                    </Field>
+
+                    <button type="button" disabled={!formikate.hasPrevious} onClick={formikate.previous}>
                         Back
                     </button>
 
-                    <button type="submit">{validationSchema.step === Steps.Review ? 'Submit' : 'Next'}</button>
+                    <button type="submit">{formikate.step === Steps.Review ? 'Submit' : 'Next'}</button>
                 </form>
             )}
         </Form>

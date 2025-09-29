@@ -1,54 +1,101 @@
-import type { FormikConfig, FormikValues, useFormik } from 'formik';
-import type { ReactNode } from 'react';
-import type { ZodType } from 'zod';
-
-type FormikProps<Values extends FormikValues> = Omit<FormikConfig<Values>, 'validationSchema'>;
+import type { FormikConfig, FormikValues } from 'formik';
+import * as z from 'zod';
+import type { internalState } from './utils';
 
 export type Step = string | number | symbol;
 
-export type UseFormikateProps = {
-    steps?: Step[];
-    initialStep?: Step;
-    validationSchema(values: unknown): Fields;
-};
-
-export type UseFormikateConfig = {
-    step: null | Step;
+export type FormikateProps = {
+    initialStep: null | Step;
     steps: Step[];
-    getFields(values: unknown): Fields;
-    hasPrevious: boolean;
-    hasNext: boolean;
-    handlePrevious(): void;
-    handleNext(): void;
-    handleSet(step: Step): void;
 };
 
-export type FormikateProps<Values extends FormikValues> = Omit<FormikProps<Values>, 'validationSchema'> & {
-    validationSchema?: UseFormikateConfig;
-};
-
-export type FieldProps<Values extends FormikValues> = ReturnType<typeof useFormik<Values>> & {
-    value: unknown;
-    error: undefined | string;
-    optional: boolean;
-};
-
-export type ValidationSchemaField<T> = {
-    name: string;
-    step?: Step;
-    enabled?: boolean;
-    validate: ZodType<T>;
-    optional?: boolean;
-    element<Values extends FormikValues>(props: Omit<FieldProps<Values>, 'value'> & { value: T }): ReactNode;
+export type FormikateReturn = {
+    next(): void;
+    previous(): void;
+    goto(step: Step): void;
+    [internalState]: {
+        validationSchema: z.ZodType | undefined;
+        setFields: React.Dispatch<React.SetStateAction<Fields>>;
+    };
 };
 
 export type Field = {
     name: string;
-    step?: Step;
-    enabled?: boolean;
-    validate: ZodType<unknown>;
-    optional?: boolean;
-    element<Values extends FormikValues>(props: FieldProps<Values>): ReactNode;
+    step: Step;
+    validate: z.ZodType;
 };
 
 export type Fields = Field[];
+
+export type FieldProps = Field & {
+    children: React.ReactNode;
+};
+
+// import type {
+//     FieldHelperProps,
+//     FieldInputProps,
+//     FieldMetaProps,
+//     FormikConfig,
+//     FormikProps,
+//     FormikValues,
+// } from 'formik';
+// import type { ReactNode } from 'react';
+// import * as z from 'zod';
+// import type { symbols } from './utils';
+
+// type Steps = (string | number | symbol)[];
+
+// export type Step = Steps[number];
+
+export type FormProps<Values extends FormikValues> = Omit<FormikConfig<Values>, 'validationSchema' | 'validate'> &
+    (
+        | {
+              validate: FormikateReturn;
+              validationSchema?: never;
+          }
+        | {
+              validate?: never;
+              validationSchema: FormikateReturn;
+          }
+    );
+
+// export type FilteredFields<S extends Schema> = {
+//     steps: Steps;
+//     initialStep: Step;
+//     formFields: Fields<S>;
+// };
+
+// export type GetFilteredFields<S extends Schema> = (values: S) => FilteredFields<S>;
+
+// export type Fields<S extends Schema> = (
+//     | {
+//           [K in keyof S]: {
+//               name: K;
+//               visible?: boolean;
+//               step: Step;
+//               validate?: z.ZodType<S[K]>;
+//               element(props: FieldInputProps<S> & FieldHelperProps<S> & FieldMetaProps<S>): ReactNode;
+//           };
+//       }[keyof S]
+//     | {
+//           name?: undefined;
+//           visible?: boolean;
+//           step: Step;
+//           element(props: FormikProps<S>): ReactNode;
+//       }
+// )[];
+
+// export type Field<S extends Schema> = Fields<S>[number];
+
+// export type State<S extends Schema> = {
+//     step: null | Step;
+//     steps: Steps;
+//     isPrevious: boolean;
+//     previous(): void;
+//     isNext: boolean;
+//     next(): void;
+//     goto(step: null | Step): void;
+//     setSteps: (steps: Steps) => void;
+//     getFilteredFields: <S extends Schema>(values: S) => FilteredFields<S>;
+//     setValidationSchema: (validationSchema: z.ZodObject<S>) => void;
+// };

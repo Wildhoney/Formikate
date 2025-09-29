@@ -18,7 +18,7 @@ lint:
 	npm run lint
 
 unit:
-	npm run test
+	npm run unit
 
 typecheck:
 	npx tsc --noEmit
