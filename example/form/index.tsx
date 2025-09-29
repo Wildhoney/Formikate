@@ -42,11 +42,7 @@ export default function Details(): ReactElement {
                     <Field
                         name="name"
                         step={Steps.Name}
-                        validate={
-                            props.values.telephone !== '123'
-                                ? schema.shape.name
-                                : z.number()
-                        }
+                        validate={schema.shape.name}
                     >
                         <label>Name</label>
                         <input type="text" {...props.getFieldProps('name')} />
