@@ -46,7 +46,12 @@ describe('renderFields', () => {
 
     it('should return all fields if there are no steps', () => {
         const visibleFields = utils.renderFields(fields, null, []);
-        expect(visibleFields.map((f) => f.name)).toEqual(['name', 'age', 'email', 'address']);
+        expect(visibleFields.map((f) => f.name)).toEqual([
+            'name',
+            'age',
+            'email',
+            'address',
+        ]);
     });
 });
 
@@ -61,7 +66,9 @@ describe('usePredicate', () => {
     ];
 
     it('should return a predicate that filters fields based on the current step', () => {
-        const { result } = renderHook(() => utils.usePredicate({ steps, step: steps[0] }));
+        const { result } = renderHook(() =>
+            utils.usePredicate({ steps, step: steps[0] }),
+        );
         const predicate = result.current;
         const filteredFields = fields.filter(predicate);
         expect(filteredFields.map((f) => f.name)).toEqual(['name', 'email']);
@@ -71,13 +78,20 @@ describe('usePredicate', () => {
         const { result } = renderHook(() => utils.usePredicate({}));
         const predicate = result.current;
         const filteredFields = fields.filter(predicate);
-        expect(filteredFields.map((f) => f.name)).toEqual(['name', 'age', 'email', 'address']);
+        expect(filteredFields.map((f) => f.name)).toEqual([
+            'name',
+            'age',
+            'email',
+            'address',
+        ]);
     });
 
     it('should filter out disabled fields', () => {
         const { result } = renderHook(() => utils.usePredicate({}));
         const predicate = result.current;
         const filteredFields = fields.filter(predicate);
-        expect(filteredFields.find((f) => f.name === 'disabled')).toBeUndefined();
+        expect(
+            filteredFields.find((f) => f.name === 'disabled'),
+        ).toBeUndefined();
     });
 });

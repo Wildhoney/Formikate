@@ -1,301 +1,124 @@
+/* eslint-disable react-refresh/only-export-components */
+
+import * as React from 'react';
+import type {
+    Fields,
+    FormikateReturn,
+    LifecycleProps,
+    MutateProps,
+    ResetProps,
+} from './types';
+import { getIn, useFormikContext } from 'formik';
+import { toFormikValidationSchema } from 'zod-formik-adapter';
+import * as z from 'zod';
+
+export const Context = React.createContext<null | FormikateReturn>(null);
+
 export const internalState = Symbol('formikate.internalState');
 
-// import * as React from 'react';
-// import * as z from 'zod';
-// import type { State, Field, FilteredFields, Schema } from './types.ts';
-// import { toFormikValidationSchema } from 'zod-formik-adapter';
+export function useContext(): FormikateReturn {
+    const context = React.useContext(Context);
+    if (!context) {
+        throw new Error('useContext must be used within a Formikate Form');
+    }
+    return context;
+}
 
-// export const Context = React.createContext<null | State<Schema>>(null);
+export function useReset({ steps, setStep }: ResetProps) {
+    const ref = React.useRef<boolean>(false);
+    const dependency = JSON.stringify(steps);
 
-// export function useContext<S extends Schema>(): State<S> {
-//     const context = React.useContext(Context);
-//     if (!context) {
-//         throw new Error('useContext must be used within a Formikate Form');
-//     }
-//     return context as State<S>;
-// }
+    React.useLayoutEffect((): void => {
+        if (ref.current) {
+            const firstStep = steps?.[0] ?? null;
+            setStep(firstStep);
+            ref.current = true;
+        }
 
-// // export function useMount<S extends Schema>(attributes: Attributes<S>) {
-// //     React.useLayoutEffect(
-// //         (): void => attributes.state?.setStep?.(attributes.definition?.initialStep ?? null),
-// //         // eslint-disable-next-line react-hooks/exhaustive-deps
-// //         [],
-// //     );
-// // }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dependency]);
+}
 
-// // export function useSchema<S extends Schema>(attributes: Attributes<S>) {
-// //     const form = useFormikContext<S>();
-// //     const predicate = usePredicate<S>(attributes);
+export function useLifecycle(field: LifecycleProps) {
+    const context = useContext();
+    const form = useFormikContext();
+    const state = React.useMemo(() => context[internalState], [context]);
 
-// //     React.useLayoutEffect((): void => {
-// //         const fields = attributes.definition?.formFields.filter(predicate) ?? [];
-// //         attributes.state?.setSchema?.(intoZodSchema(fields));
-// //     }, [form.values, attributes.state?.step]);
-// // }
+    React.useLayoutEffect(() => {
+        state.setFields((fields) => [
+            ...fields.filter(({ name }) => field.name !== name),
+            field,
+        ]);
 
-// // import { useFormik, type FormikContextType, type FormikValues, getIn } from 'formik';
-// // import {
-// //     useCallback,
-// //     useLayoutEffect,
-// //     useMemo,
-// //     useRef,
-// //     useState,
-// //     Fragment,
-// //     type ReactElement,
-// //     createContext,
-// // } from 'react';
-// // import * as z from 'zod';
-// // import { toFormikValidationSchema } from 'zod-formik-adapter';
-// // import type { Field, FieldProps, Fields, FormikateProps, Step, UseFormikateConfig } from './types.ts';
+        return () => {
+            form.setFieldValue(
+                field.name,
+                getIn(form.initialValues, field.name),
+            );
+            state.setFields((fields) =>
+                fields.filter(({ name }) => field.name !== name),
+            );
+        };
 
-// // export const FieldsContext = createContext<Fields | null>(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+}
 
-// // /**
-// //  * A React hook that controllers the logic of a multi-step form powered by Formik.
-// //  * It manages the form's validation schema based on the current step.
-// //  *
-// //  * @template Values - The type of form values.
-// //  * @param {FormikateProps<Values>} props - The properties for the Formikate form, including initial values and formikate configuration.
-// //  * @returns {{ state: { form: import("formik").FormikContextType<Values>; validationSchema: Fields; step: import("./types").Step | null | undefined; } }} An object containing the form state, validation schema, and current step.
-// //  */
-// // export function useController<Values extends FormikValues>(props: FormikateProps<Values>) {
-// //     const step = props.validationSchema?.step;
-// //     const predicate = usePredicate(props.validationSchema);
+export function useMutate(field: MutateProps) {
+    const context = useContext();
+    const state = React.useMemo(() => context[internalState], [context]);
+    const dependency = JSON.stringify([field.name, field.validate]);
 
-// //     const initialFields = useMemo(
-// //         () => props.validationSchema?.getFields(props.initialValues) ?? [],
-// //         [props.validationSchema, props.initialValues],
-// //     );
+    React.useLayoutEffect(() => {
+        state.setFields((fields) => {
+            const exists = fields.find(({ name }) => field.name === name);
+            if (exists) {
+                return fields.map((x) =>
+                    x.name === field.name ? { ...x, ...field } : x,
+                );
+            }
+            return [...fields, field];
+        });
 
-// //     const [validationSchema, setValidationSchema] = useState<Fields>(initialFields.filter(predicate));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dependency]);
+}
 
-// //     const form = useFormik({
-// //         ...props,
-// //         validationSchema: intoZodSchema(validationSchema),
-// //     });
+export function intoZodSchema(fields: Fields) {
+    const validationSchema = fields.reduce<Record<string, z.ZodTypeAny>>(
+        (fields, field) => ({ ...fields, [field.name]: field.validate }),
+        {},
+    );
 
-// //     const fields = useMemo(
-// //         () => props.validationSchema?.getFields(form.values) ?? [],
-// //         [form.values, props.validationSchema],
-// //     );
+    return toFormikValidationSchema(z.object(validationSchema));
+}
 
-// //     useExpose(form, fields, props.validationSchema);
-// //     useRestore(fields, form, props.initialValues);
+export function Expose(): null {
+    const ref = React.useRef<number>(0);
+    const form = useFormikContext();
+    const context = useContext();
+    const state = React.useMemo(() => context[internalState], [context]);
 
-// //     useLayoutEffect(
-// //         (): void => setValidationSchema(fields.filter(predicate)),
-// //         [fields, form.values, predicate, props.validationSchema, step],
-// //     );
+    React.useEffect(() => {
+        if (ref.current === form.submitCount) {
+            return;
+        }
 
-// //     useLayoutEffect((): void => {
-// //         const [step] = props.validationSchema?.steps ?? [];
-// //         if (step) props.validationSchema?.handleSet(step);
-// //     }, [JSON.stringify(props.validationSchema?.steps)]); // eslint-disable-line react-hooks/exhaustive-deps
+        ref.current = form.submitCount;
 
-// //     return useMemo(() => ({ state: { form, validationSchema, step } }), [validationSchema, form, step]);
-// // }
+        const errorIndices = Object.keys(form.errors).map((key) => {
+            const field = state.fields.find(({ name }) => name === key);
+            return state.steps.findIndex((step) => field?.step === step);
+        });
 
-// export const symbols = {
-//     getFilteredFields: Symbol('formikate.getFilteredFields'),
-//     setSteps: Symbol('formikate.setSteps'),
-// };
+        const lowestIndex = Math.min(...errorIndices.filter((i) => i >= 0));
 
-// // /**
-// //  * A React hook that returns a predicate function to filter form fields
-// //  * based on the current step in a multi-step form.
-// //  *
-// //  * @template Values - The type of form values.
-// //  * @param {FormikateProps<Values>["validationSchema"]} validationSchema - The configuration for the multi-step form.
-// //  * @returns {(field: Field) => boolean} A predicate function that returns true if the field should be active on the current step.
-// //  */
-// // export type Predicate<S extends Schema> = (field: Field<S>) => boolean;
+        if (lowestIndex < state.currentStepIndex) {
+            state.setStep(state.steps[lowestIndex]);
+        }
 
-// // export function usePredicate<S extends Schema>(attributes: Attributes<S>): Predicate<S> {
-// //     return React.useCallback(
-// //         (field: Field<S>) => {
-// //             if (field.visible === false) return false;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.errors]);
 
-// //             const steps = attributes.definition?.steps ?? [];
-// //             if (steps.length === 0) return true;
-
-// //             const currentStep = attributes.state?.step;
-// //             if (currentStep == null) return field.step === undefined;
-
-// //             const index = field.step != null ? steps.indexOf(field.step) : -1;
-// //             if (index === -1) return false;
-
-// //             return index <= steps.indexOf(currentStep);
-// //         },
-// //         [attributes.definition?.steps, attributes.state?.step],
-// //     );
-// // }
-
-// export function intoZodSchema<S extends Schema>(fields: Fields<S>) {
-//     const validationSchema = fields.reduce<Record<string, z.ZodTypeAny>>((acc, field) => {
-//         if (field.name && field.validate) {
-//             acc[field.name as string] = field.validate;
-//         }
-//         return acc;
-//     }, {});
-
-//     return toFormikValidationSchema(z.object(validationSchema));
-// }
-
-// export function useSchemableFields<S extends Schema>(fieldMappings: FilteredFields<S>) {
-//     const context = useContext();
-
-//     return React.useMemo(
-//         () =>
-//             fieldMappings.formFields.filter((field) => {
-//                 if (field.step == null) return true;
-
-//                 const currentIndex = context?.steps.findIndex((step) => step === context.step) ?? -1;
-//                 const fieldIndex = fieldMappings.steps.findIndex((step) => step === field.step);
-
-//                 return fieldIndex <= currentIndex;
-//             }),
-//         [fieldMappings, context],
-//     );
-// }
-
-// export function useVisibleFields<S extends Schema>(schemableFields: Field<S>[]) {
-//     const context = useContext();
-
-//     return React.useMemo(
-//         () => schemableFields.filter((field) => field.step === context?.step || field.step == null),
-//         [schemableFields, context],
-//     );
-// }
-
-// export function useBootstrap<S extends Schema>(fieldMappings: FilteredFields<S>) {
-//     const context = useContext();
-
-//     React.useLayoutEffect(() => {
-//         context?.goto(fieldMappings.initialStep ?? null);
-//         context?.setSteps(fieldMappings.steps);
-//         // eslint-disable-next-line react-hooks/exhaustive-deps
-//     }, []);
-// }
-
-// // /**
-// //  * Returns the earliest field with an error based on step and field order.
-// //  * @param errors - The Formik errors object.
-// //  * @param fields - The array of all fields.
-// //  * @param steps - The array of all steps.
-// //  * @returns The first field with an error, or undefined if none exists.
-// //  */
-// // function takeEarliest(errors: FormikValues, fields: Fields, steps: Step[] = []): Field | undefined {
-// //     return Object.keys(errors)
-// //         .map((name) => fields.find((field) => field.name === name))
-// //         .filter((field): field is Field => field !== undefined)
-// //         .sort((a, b) => {
-// //             const stepIndexA = a.step ? steps.indexOf(a.step) : -1;
-// //             const stepIndexB = b.step ? steps.indexOf(b.step) : -1;
-
-// //             if (stepIndexA !== stepIndexB) {
-// //                 return stepIndexA - stepIndexB;
-// //             }
-
-// //             const arrayIndexA = fields.indexOf(a);
-// //             const arrayIndexB = fields.indexOf(b);
-
-// //             return arrayIndexA - arrayIndexB;
-// //         })[0];
-// // }
-
-// // /**
-// //  * A React hook that restores the value of a field when it becomes disabled.
-// //  * @template Values - The type of form values.
-// //  * @param {Fields} fields - The array of all fields.
-// //  * @param {ReturnType<typeof useFormik<Values>>} form - The Formik bag.
-// //  * @param {Values} initialValues - The initial values of the form.
-// //  */
-// // function useRestore<Values extends FormikValues>(
-// //     fields: Fields,
-// //     form: ReturnType<typeof useFormik<Values>>,
-// //     initialValues: Values,
-// // ) {
-// //     const previousFieldsRef = useRef<Fields>(fields);
-
-// //     useLayoutEffect(() => {
-// //         fields.forEach((field) => {
-// //             const oldField = previousFieldsRef.current.find((oldField) => oldField.name === field.name);
-// //             if (oldField && oldField.enabled !== false && field.enabled === false) {
-// //                 form.setFieldValue(field.name, getIn(initialValues, field.name));
-// //             }
-// //         });
-// //         previousFieldsRef.current = fields;
-// //     }, [fields, form, initialValues]);
-// // }
-
-// // /**
-// //  * A React hook that navigates to the earliest field with an error on form submission.
-// //  * @template Values - The type of form values.
-// //  * @param {ReturnType<typeof useFormik<Values>>} form - The Formik bag.
-// //  * @param {Fields} fields - The array of all fields.
-// //  * @param {UseFormikateConfig | undefined} validationSchema - The configuration for the multi-step form.
-// //  */
-// // function useExpose<Values extends FormikValues>(
-// //     form: ReturnType<typeof useFormik<Values>>,
-// //     fields: Fields,
-// //     validationSchema: UseFormikateConfig | undefined,
-// // ) {
-// //     const [lastSubmitCount, setLastSubmitCount] = useState<number>(form.submitCount);
-
-// //     useLayoutEffect(() => {
-// //         if (form.submitCount > lastSubmitCount && !form.isValid) {
-// //             const earliest = takeEarliest(form.errors, fields, validationSchema?.steps);
-// //             if (earliest?.step != null) validationSchema?.handleSet(earliest.step);
-// //             setLastSubmitCount(form.submitCount);
-// //         }
-// //     }, [lastSubmitCount, validationSchema, form.values, form.submitCount, form.isValid, form.errors, fields]);
-// // }
-
-// // /**
-// //  * Filters the validation schema fields to return only those that should be visible
-// //  * based on the current step.
-// //  *
-// //  * @param validationSchema The complete validation schema fields.
-// //  * @param currentStep The current step of the form.
-// //  * @param steps An array of all defined steps in the form.
-// //  * @returns An array of fields that are visible for the current step.
-// //  */
-// // export function renderFields(validationSchema: Fields, currentStep: Step | null | undefined, steps: Step[]): Fields {
-// //     return validationSchema.filter((field) => {
-// //         if (steps.length === 0) return true;
-// //         if (currentStep == null) return field.step === undefined;
-// //         return field.step === currentStep;
-// //     });
-// // }
-
-// // /**
-// //  * Renders the provided fields as React elements, injecting formik props.
-// //  *
-// //  * @template Values The type of the Formik values.
-// //  * @param fields An array of fields to render.
-// //  * @param form The Formik bag, containing form state and helpers.
-// //  * @returns An array of React elements representing the rendered fields.
-// //  */
-// // export function renderInputs<Values extends FormikValues>(
-// //     fields: Fields,
-// //     form: FormikContextType<Values>,
-// // ): ReactElement[] {
-// //     return fields.map((field) => (
-// //         <Fragment key={field.name}>
-// //             {field.element(
-// //                 isField(field)
-// //                     ? ({
-// //                           ...form,
-// //                           optional: field.validate.safeParse(undefined).success,
-// //                           value: getIn(form.values, field.name),
-// //                           error: getIn(form.errors, field.name),
-// //                       } as FieldProps<Values>)
-// //                     : (form as FieldProps<Values>),
-// //             )}
-// //         </Fragment>
-// //     ));
-// // }
-
-// // function isField(value: unknown): value is Field {
-// //     return 'validate' in (value as Field);
-// // }
+    return null;
+}

@@ -23,7 +23,7 @@ export default function Details(): ReactElement {
     });
 
     const handleSubmit = useCallback(
-        (values: Schema) => {
+        (_values: Schema) => {
             formikate.next();
         },
         [formikate],
@@ -31,7 +31,7 @@ export default function Details(): ReactElement {
 
     return (
         <Form
-            initialValues={{ name: '', age: '', telephone: '' }}
+            initialValues={{ name: '', age: '6', telephone: '' }}
             validateOnBlur={false}
             validateOnChange={false}
             validationSchema={formikate}
@@ -39,26 +39,59 @@ export default function Details(): ReactElement {
         >
             {(props) => (
                 <form onSubmit={props.handleSubmit}>
-                    <Field name="name" step={Steps.Name} validate={schema.shape.name}>
-                        {/* <Name /> */}
-                        <div>Name</div>
+                    <Field
+                        name="name"
+                        step={Steps.Name}
+                        validate={
+                            props.values.telephone !== '123'
+                                ? schema.shape.name
+                                : z.number()
+                        }
+                    >
+                        <label>Name</label>
+                        <input type="text" {...props.getFieldProps('name')} />
+                        <div>{props.errors.name}</div>
                     </Field>
 
-                    <Field name="age" step={Steps.Name} validate={schema.shape.age}>
-                        {/* <Age /> */}
-                        <div>Age</div>
+                    {props.values.name !== 'Adam' && (
+                        <Field
+                            name="age"
+                            step={Steps.Name}
+                            validate={schema.shape.age}
+                        >
+                            <label>Age</label>
+                            <input
+                                type="text"
+                                {...props.getFieldProps('age')}
+                            />
+                            <div>{props.errors.age}</div>
+                        </Field>
+                    )}
+
+                    <Field
+                        name="telephone"
+                        step={Steps.Address}
+                        validate={schema.shape.telephone}
+                    >
+                        <label>Telephone</label>
+                        <input
+                            type="text"
+                            {...props.getFieldProps('telephone')}
+                        />
+                        <div>{props.errors.telephone}</div>
                     </Field>
 
-                    <Field name="telephone" step={Steps.Address} validate={schema.shape.telephone}>
-                        {/* <Telephone /> */}
-                        <div>Telephone</div>
-                    </Field>
-
-                    <button type="button" disabled={!formikate.hasPrevious} onClick={formikate.previous}>
+                    <button
+                        type="button"
+                        disabled={!formikate.isPrevious}
+                        onClick={formikate.previous}
+                    >
                         Back
                     </button>
 
-                    <button type="submit">{formikate.step === Steps.Review ? 'Submit' : 'Next'}</button>
+                    <button type="submit">
+                        {formikate.step === Steps.Review ? 'Submit' : 'Next'}
+                    </button>
                 </form>
             )}
         </Form>

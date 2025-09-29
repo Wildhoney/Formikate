@@ -40,7 +40,13 @@ export function useValidationSchema(): ValidationSchema {
                 enabled: true,
                 validate: validationSchema.shape.name,
                 element({ value, error, handleChange }) {
-                    return <input name="name" value={value} onChange={handleChange} />;
+                    return (
+                        <input
+                            name="name"
+                            value={value}
+                            onChange={handleChange}
+                        />
+                    );
                 },
             }),
             field({
@@ -49,7 +55,13 @@ export function useValidationSchema(): ValidationSchema {
                 enabled: true,
                 validate: validationSchema.shape.age,
                 element({ value, error, handleChange }) {
-                    return <input name="age" value={value} onChange={handleChange} />;
+                    return (
+                        <input
+                            name="age"
+                            value={value}
+                            onChange={handleChange}
+                        />
+                    );
                 },
             }),
             field({
@@ -58,7 +70,13 @@ export function useValidationSchema(): ValidationSchema {
                 enabled: true,
                 validate: validationSchema.shape.telephone,
                 element({ value, error, handleChange }) {
-                    return <input name="telephone" value={value} onChange={handleChange} />;
+                    return (
+                        <input
+                            name="telephone"
+                            value={value}
+                            onChange={handleChange}
+                        />
+                    );
                 },
             }),
         ],
@@ -82,7 +100,8 @@ export default function App(): ReactElement {
 
     const handleSubmit = useCallback(
         (values) => {
-            if (validationSchema.step === Steps.Review) return void console.log(values);
+            if (validationSchema.step === Steps.Review)
+                return void console.log(values);
             else formikate.handleNext();
         },
         [formikate],
@@ -115,7 +134,11 @@ export default function App(): ReactElement {
                         Back
                     </button>
 
-                    <button type="submit">{validationSchema.step === Steps.Review ? 'Submit' : 'Next'}</button>
+                    <button type="submit">
+                        {validationSchema.step === Steps.Review
+                            ? 'Submit'
+                            : 'Next'}
+                    </button>
                 </form>
             )}
         </Form>
