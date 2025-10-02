@@ -1,6 +1,60 @@
+import { renderHook } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import * as z from 'zod';
-import { intoZodSchema } from './utils';
+import { intoZodSchema, useSteps } from './utils';
+
+describe('useSteps', () => {
+    const steps = ['a', 'b', 'c', 'd'];
+    const fields = [
+        { name: 'field1', step: 'a', validate: z.any() },
+        { name: 'field2', step: 'c', validate: z.any() },
+    ];
+
+    it('should return the correct next and previous steps', () => {
+        const { result } = renderHook(() =>
+            useSteps({ step: 'a', steps, fields }),
+        );
+        expect(result.current.next).toBe('c');
+        expect(result.current.previous).toBe(null);
+    });
+
+    it('should skip intermediate steps without fields', () => {
+        const { result } = renderHook(() =>
+            useSteps({ step: 'a', steps, fields }),
+        );
+        expect(result.current.next).toBe('c');
+    });
+
+    it('should return null for previous when on the first step', () => {
+        const { result } = renderHook(() =>
+            useSteps({ step: 'a', steps, fields }),
+        );
+        expect(result.current.previous).toBe(null);
+    });
+
+    it('should return null for next when on the last step with a field', () => {
+        const { result } = renderHook(() =>
+            useSteps({ step: 'c', steps, fields }),
+        );
+        expect(result.current.next).toBe(null);
+    });
+
+    it('should handle being on a step without a field', () => {
+        const { result } = renderHook(() =>
+            useSteps({ step: 'b', steps, fields }),
+        );
+        expect(result.current.next).toBe('c');
+        expect(result.current.previous).toBe('a');
+    });
+
+    it('should return null for next and previous if there are no fields', () => {
+        const { result } = renderHook(() =>
+            useSteps({ step: 'a', steps, fields: [] }),
+        );
+        expect(result.current.next).toBe(null);
+        expect(result.current.previous).toBe(null);
+    });
+});
 
 describe('intoZodSchema', () => {
     it('should create a validation schema from fields', async () => {

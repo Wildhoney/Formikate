@@ -1,12 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { useMemo, useState, type ReactElement } from 'react';
+import * as z from 'zod';
+import { useId, useMemo, useState, type ReactElement } from 'react';
 import type {
     FieldProps,
     Fields,
     FormikateProps,
     FormikateReturn,
     FormProps,
+    SectionProps,
     Step,
 } from './types';
 import { Formik, type FormikValues } from 'formik';
@@ -19,6 +21,7 @@ import {
     useLifecycle,
     useMutate,
     useReset,
+    useSteps,
 } from './utils';
 
 export function useFormikate({
@@ -28,12 +31,7 @@ export function useFormikate({
     const [step, setStep] = useState<null | Step>(initialStep);
     const [fields, setFields] = useState<Fields>([]);
 
-    const { current, next, previous } = useMemo(() => {
-        const current = steps.findIndex((x) => x === step);
-        const next = steps[current + 1];
-        const previous = steps[current - 1];
-        return { current, next, previous };
-    }, [step, steps]);
+    const { current, next, previous } = useSteps({ step, steps, fields });
 
     useReset({ steps, setStep });
 
@@ -42,6 +40,10 @@ export function useFormikate({
             isNext: next != null,
             isPrevious: previous != null,
             step,
+            progress: {
+                current: current + 1,
+                total: fields.filter((field) => field.step).length + 1,
+            },
             next: () => next != null && setStep(next),
             previous: () => previous != null && setStep(previous),
             goto: (step) => setStep(step),
@@ -104,6 +106,22 @@ export function Field({ children, ...props }: FieldProps): null | ReactElement {
     useMutate(props);
 
     if (state.step != null && state.step !== props.step) return null;
+
+    return <>{children}</>;
+}
+
+export function Section({ step, children }: SectionProps) {
+    const name = useId();
+    const context = useContext();
+    const state = useMemo(() => context?.[internalState], [context]);
+
+    useLifecycle({
+        name: `formikate.section.${name}`,
+        step,
+        validate: z.any(),
+    });
+
+    if (state.step != null && state.step !== step) return null;
 
     return <>{children}</>;
 }

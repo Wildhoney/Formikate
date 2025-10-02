@@ -7,6 +7,8 @@ import type {
     LifecycleProps,
     MutateProps,
     ResetProps,
+    Step,
+    StepsProps,
 } from './types';
 import { getIn, useFormikContext } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
@@ -121,4 +123,33 @@ export function Expose(): null {
     }, [form.errors]);
 
     return null;
+}
+
+export function useSteps({ step, steps, fields }: StepsProps) {
+    return React.useMemo(() => {
+        const current = steps.findIndex((x) => x === step);
+
+        const indices = [
+            ...new Set(
+                fields
+                    .map((field) => field.step)
+                    .filter((x): x is Step => x != null),
+            ),
+        ]
+            .map((x) => steps.findIndex((y) => y === x))
+            .filter((index) => index !== -1);
+
+        const nextIndices = indices.filter((index) => index > current);
+        const previousIndices = indices.filter((index) => index < current);
+
+        const nextIndex =
+            nextIndices.length > 0 ? Math.min(...nextIndices) : -1;
+        const previousIndex =
+            previousIndices.length > 0 ? Math.max(...previousIndices) : -1;
+
+        const next = nextIndex !== -1 ? steps[nextIndex] : null;
+        const previous = previousIndex !== -1 ? steps[previousIndex] : null;
+
+        return { current, next, previous };
+    }, [step, steps, fields]);
 }

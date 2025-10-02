@@ -1,7 +1,6 @@
 import type { FormikConfig, FormikValues } from 'formik';
 import * as z from 'zod';
 import type { internalState } from './utils';
-import type { toFormikValidationSchema } from 'zod-formik-adapter';
 
 export type Step = string | number | symbol;
 
@@ -14,6 +13,12 @@ export type ResetProps = Pick<FormikateProps, 'steps'> & {
     setStep: React.Dispatch<React.SetStateAction<Step | null>>;
 };
 
+export type StepsProps = {
+    step: Step | null;
+    steps: Step[];
+    fields: Fields;
+};
+
 export type LifecycleProps = Field;
 
 export type MutateProps = Field;
@@ -24,6 +29,10 @@ export type FormikateReturn = {
     step: Step | null;
     isNext: boolean;
     isPrevious: boolean;
+    progress: {
+        current: number;
+        total: number;
+    };
     goto(step: Step): void;
     [internalState]: {
         step: null | Step;
@@ -32,7 +41,7 @@ export type FormikateReturn = {
         setStep: React.Dispatch<React.SetStateAction<Step | null>>;
         setFields: React.Dispatch<React.SetStateAction<Fields>>;
         currentStepIndex: number;
-        validationSchema: ReturnType<typeof toFormikValidationSchema>;
+        validationSchema: { validate: (values: FormikValues) => Promise<void> };
     };
 };
 
@@ -45,6 +54,10 @@ export type Field = {
 export type Fields = Field[];
 
 export type FieldProps = Field & {
+    children: React.ReactNode;
+};
+
+export type SectionProps = Pick<Field, 'step'> & {
     children: React.ReactNode;
 };
 
