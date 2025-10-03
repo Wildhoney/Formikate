@@ -1,15 +1,16 @@
 import * as z from 'zod';
-import { Form, Field, useFormikate, Section } from '../../src';
+import { Form, Field, useFormikate } from '../../src';
 import { ReactElement, useCallback } from 'react';
 
 const enum Steps {
-    Name,
-    Address,
-    Review,
+    Name = 'name',
+    Address = 'address',
+    Review = 'review',
 }
 
 const schema = z.object({
     name: z.string().min(1).max(100),
+    guest: z.boolean().optional(),
     age: z.string().min(2).max(100),
     telephone: z.string().min(1).max(15),
 });
@@ -23,7 +24,9 @@ export default function Details(): ReactElement {
     });
 
     const handleSubmit = useCallback(
-        (values: Schema) => {
+        async (values: Schema) => {
+            await new Promise((r) => setTimeout(r, 2000));
+
             if (formikate.step === Steps.Review) {
                 return void console.log('Submitting', values);
             }
@@ -35,14 +38,22 @@ export default function Details(): ReactElement {
 
     return (
         <Form
-            initialValues={{ name: '', age: '6', telephone: '' }}
+            initialValues={{ name: '', guest: false, age: '', telephone: '' }}
             validateOnBlur={false}
             validateOnChange={false}
             validationSchema={formikate}
             onSubmit={handleSubmit}
         >
             {(props) => (
-                <form onSubmit={props.handleSubmit}>
+                <form
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        alignItems: 'flex-start',
+                    }}
+                    onSubmit={props.handleSubmit}
+                >
                     <Field
                         name="name"
                         step={Steps.Name}
@@ -53,19 +64,42 @@ export default function Details(): ReactElement {
                         <div>{props.errors.name}</div>
                     </Field>
 
-                    <Section step={Steps.Review}>Review</Section>
-
                     <Field
-                        name="age"
+                        name="guest"
                         step={Steps.Name}
-                        validate={schema.shape.age}
+                        validate={schema.shape.guest}
                     >
-                        <label>Age</label>
-                        <input type="text" {...props.getFieldProps('age')} />
-                        <div>{props.errors.age}</div>
+                        <label>
+                            <input
+                                type="checkbox"
+                                {...props.getFieldProps('guest')}
+                                checked={props.values.guest}
+                            />
+                            Continue as a guest?
+                        </label>
                     </Field>
 
-                    {props.values.name !== 'Adam' && (
+                    {props.values.guest === false && (
+                        <Field
+                            name="age"
+                            step={Steps.Name}
+                            validate={schema.shape.age}
+                        >
+                            <label>Age</label>
+                            <input
+                                type="text"
+                                {...props.getFieldProps('age')}
+                            />
+                            <div>{props.errors.age}</div>
+                        </Field>
+                    )}
+
+                    <Field virtual step={Steps.Review}>
+                        Review
+                        <pre>{JSON.stringify(props.values, null, 2)}</pre>
+                    </Field>
+
+                    {props.values.guest === false && (
                         <Field
                             name="telephone"
                             step={Steps.Address}
@@ -80,24 +114,30 @@ export default function Details(): ReactElement {
                         </Field>
                     )}
 
-                    <button
-                        type="button"
-                        disabled={!formikate.isPrevious}
-                        onClick={formikate.previous}
-                    >
-                        Back
-                    </button>
+                    <section>
+                        <button
+                            type="button"
+                            disabled={!formikate.isPrevious}
+                            onClick={formikate.previous}
+                        >
+                            Back
+                        </button>
 
-                    <button type="submit">
-                        {formikate.step === Steps.Review ? 'Submit' : 'Next'}
-                    </button>
+                        <button type="submit" disabled={props.isSubmitting}>
+                            {formikate.step === Steps.Review
+                                ? 'Submit'
+                                : 'Next'}
+                        </button>
 
-                    <div>
-                        <strong>
-                            {formikate.progress.current} of{' '}
-                            {formikate.progress.total}
-                        </strong>
-                    </div>
+                        <button
+                            type="button"
+                            onClick={() => formikate.goto(Steps.Name)}
+                        >
+                            Reset
+                        </button>
+                    </section>
+
+                    <pre>{JSON.stringify(formikate.progress, null, 2)}</pre>
                 </form>
             )}
         </Form>

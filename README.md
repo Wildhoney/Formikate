@@ -11,98 +11,40 @@
 
 ## Getting started
 
-Define your steps and fields:
+Define your validation schema, steps, and use the `useFormikate` hook to manage the form state. Then, use the `Form` and `Field` components to build your form.
 
 ```tsx
 import * as z from 'zod';
-import { field, ValidationSchema } from 'formikate';
+import { Form, Field, useFormikate } from 'formikate';
+import { ReactElement, useCallback } from 'react';
 
-const validationSchema = z.object({
-    name: z.string().min(1).max(100),
-    age: z.string().min(2).max(100),
-    telephone: z.string().min(1).max(15),
-});
-
-enum Steps {
+const enum Steps {
     Name,
     Address,
     Review,
 }
 
-type ValidationSchema = z.infer<typeof validationSchema>;
+const schema = z.object({
+    name: z.string().min(1).max(100),
+    age: z.string().min(2).max(100),
+    telephone: z.string().min(1).max(15),
+});
 
-export function useValidationSchema(): ValidationSchema {
-    return useCallback(
-        (values: Values) => [
-            field({
-                name: 'name',
-                step: Steps.Name,
-                enabled: true,
-                validate: validationSchema.shape.name,
-                element({ value, error, handleChange }) {
-                    return (
-                        <input
-                            name="name"
-                            value={value}
-                            onChange={handleChange}
-                        />
-                    );
-                },
-            }),
-            field({
-                name: 'age',
-                step: Steps.Name,
-                enabled: true,
-                validate: validationSchema.shape.age,
-                element({ value, error, handleChange }) {
-                    return (
-                        <input
-                            name="age"
-                            value={value}
-                            onChange={handleChange}
-                        />
-                    );
-                },
-            }),
-            field({
-                name: 'telephone',
-                step: Steps.Address,
-                enabled: true,
-                validate: validationSchema.shape.telephone,
-                element({ value, error, handleChange }) {
-                    return (
-                        <input
-                            name="telephone"
-                            value={value}
-                            onChange={handleChange}
-                        />
-                    );
-                },
-            }),
-        ],
-        [],
-    );
-}
-```
+type Schema = z.infer<typeof schema>;
 
-Use the `Form` component and `useValidationSchema` hook in your application &ndash; the `Form` component is a wrapper around `Formik` &ndash; it accepts all the same props as Formik however the `validationSchema` prop should be passed from the `useValidationSchema` invocation. Use the `Fields` component to render the applicable input fields within the form.
-
-```tsx
-import { ReactElement, useCallback } from 'react';
-import { Form, Fields, useValidationSchema } from 'formikate';
-
-export default function App(): ReactElement {
-    const validationSchema = useValidationSchema({
-        validationSchema: getValidationSchema(),
-        steps: [Steps.Name, Steps.Address, Steps.Review],
+export default function Details(): ReactElement {
+    const formikate = useFormikate({
         initialStep: Steps.Name,
+        steps: [Steps.Name, Steps.Address, Steps.Review],
     });
 
     const handleSubmit = useCallback(
-        (values) => {
-            if (validationSchema.step === Steps.Review)
-                return void console.log(values);
-            else formikate.handleNext();
+        (values: Schema) => {
+            if (formikate.step === Steps.Review) {
+                return void console.log('Submitting', values);
+            }
+
+            formikate.next();
         },
         [formikate],
     );
@@ -110,38 +52,76 @@ export default function App(): ReactElement {
     return (
         <Form
             initialValues={{ name: '', age: '', telephone: '' }}
-            validationSchema={validationSchema}
             validateOnBlur={false}
             validateOnChange={false}
+            validationSchema={formikate}
             onSubmit={handleSubmit}
         >
-            {({ values, handleSubmit }) => (
-                <form onSubmit={handleSubmit}>
-                    {validationSchema.step !== Steps.Review ? (
-                        <Fields />
-                    ) : (
-                        <div>
-                            <h2>Review your information</h2>
-                            <pre>{JSON.stringify(values, null, 2)}</pre>
-                        </div>
+            {(props) => (
+                <form onSubmit={props.handleSubmit}>
+                    <Field
+                        name="name"
+                        step={Steps.Name}
+                        validate={schema.shape.name}
+                    >
+                        <label>Name</label>
+                        <input type="text" {...props.getFieldProps('name')} />
+                        <div>{props.errors.name}</div>
+                    </Field>
+
+                    <Field virtual step={Steps.Review}>
+                        Review
+                        <pre>{JSON.stringify(props.values, null, 2)}</pre>
+                    </Field>
+
+                    <Field
+                        name="age"
+                        step={Steps.Name}
+                        validate={schema.shape.age}
+                    >
+                        <label>Age</label>
+                        <input type="text" {...props.getFieldProps('age')} />
+                        <div>{props.errors.age}</div>
+                    </Field>
+
+                    {props.values.name !== 'Adam' && (
+                        <Field
+                            name="telephone"
+                            step={Steps.Address}
+                            validate={schema.shape.telephone}
+                        >
+                            <label>Telephone</label>
+                            <input
+                                type="text"
+                                {...props.getFieldProps('telephone')}
+                            />
+                            <div>{props.errors.telephone}</div>
+                        </Field>
                     )}
 
                     <button
                         type="button"
-                        disabled={!validationSchema.hasPrevious}
-                        onClick={validationSchema.handlePrevious}
+                        disabled={!formikate.isPrevious}
+                        onClick={formikate.previous}
                     >
                         Back
                     </button>
 
                     <button type="submit">
-                        {validationSchema.step === Steps.Review
-                            ? 'Submit'
-                            : 'Next'}
+                        {formikate.step === Steps.Review ? 'Submit' : 'Next'}
                     </button>
+
+                    <div>
+                        <strong>
+                            {formikate.progress.current} of{' '}
+                            {formikate.progress.total}
+                        </strong>
+                    </div>
                 </form>
             )}
         </Form>
     );
 }
 ```
+
+> **Note:** The `steps` array in `useFormikate` defines the order of the steps. It does not determine which steps are visible. The visibility of steps is determined by the `<Field>` components and their `step` prop. If you change the order of `steps` during render, the form will reset to either the initial step, if defined, otherwise the first step in the new order.

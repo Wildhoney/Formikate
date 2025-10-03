@@ -9,7 +9,7 @@ export type FormikateProps = {
     steps: Step[];
 };
 
-export type ResetProps = Pick<FormikateProps, 'steps'> & {
+export type ResetProps = Pick<FormikateProps, 'steps' | 'initialStep'> & {
     setStep: React.Dispatch<React.SetStateAction<Step | null>>;
 };
 
@@ -30,9 +30,9 @@ export type FormikateReturn = {
     isNext: boolean;
     isPrevious: boolean;
     progress: {
-        current: number;
-        total: number;
-    };
+        step: Step;
+        current: boolean;
+    }[];
     goto(step: Step): void;
     [internalState]: {
         step: null | Step;
@@ -51,13 +51,14 @@ export type Field = {
     validate: z.ZodType;
 };
 
-export type Fields = Field[];
-
-export type FieldProps = Field & {
-    children: React.ReactNode;
+export type VirtualField = {
+    virtual: true;
+    step: Step;
 };
 
-export type SectionProps = Pick<Field, 'step'> & {
+export type Fields = Field[];
+
+export type FieldProps = (Field | VirtualField) & {
     children: React.ReactNode;
 };
 

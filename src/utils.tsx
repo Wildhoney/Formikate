@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import type {
+    Field,
     Fields,
     FormikateReturn,
     LifecycleProps,
     MutateProps,
     ResetProps,
-    Step,
     StepsProps,
+    VirtualField,
 } from './types';
 import { getIn, useFormikContext } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
@@ -26,14 +27,14 @@ export function useContext(): FormikateReturn {
     return context;
 }
 
-export function useReset({ steps, setStep }: ResetProps) {
+export function useReset({ initialStep, steps, setStep }: ResetProps) {
     const ref = React.useRef<boolean>(false);
     const dependency = JSON.stringify(steps);
 
     React.useLayoutEffect((): void => {
         if (ref.current) {
             const firstStep = steps?.[0] ?? null;
-            setStep(firstStep);
+            setStep(initialStep ?? firstStep);
             ref.current = true;
         }
 
@@ -66,20 +67,42 @@ export function useLifecycle(field: LifecycleProps) {
     }, []);
 }
 
+function isVirtualField(field: Field | VirtualField): field is VirtualField {
+    return (field as VirtualField).virtual === true;
+}
+
+export function useIntoField(field: Field | VirtualField): Field {
+    const id = React.useId();
+
+    return React.useMemo(
+        () =>
+            isVirtualField(field)
+                ? {
+                      name: `formikate-virtual-field-${id}`,
+                      validate: z.any(),
+                      ...field,
+                  }
+                : field,
+        [field, id],
+    );
+}
+
 export function useMutate(field: MutateProps) {
     const context = useContext();
     const state = React.useMemo(() => context[internalState], [context]);
-    const dependency = JSON.stringify([field.name, field.validate]);
+    const dependency = JSON.stringify(
+        isVirtualField(field) ? [field.virtual] : [field.name, field.validate],
+    );
 
     React.useLayoutEffect(() => {
         state.setFields((fields) => {
             const exists = fields.find(({ name }) => field.name === name);
-            if (exists) {
-                return fields.map((x) =>
-                    x.name === field.name ? { ...x, ...field } : x,
-                );
-            }
-            return [...fields, field];
+
+            return exists
+                ? fields.map((x) =>
+                      x.name === field.name ? { ...x, ...field } : x,
+                  )
+                : [...fields, field];
         });
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,27 +152,24 @@ export function useSteps({ step, steps, fields }: StepsProps) {
     return React.useMemo(() => {
         const current = steps.findIndex((x) => x === step);
 
-        const indices = [
-            ...new Set(
-                fields
-                    .map((field) => field.step)
-                    .filter((x): x is Step => x != null),
-            ),
-        ]
-            .map((x) => steps.findIndex((y) => y === x))
+        const indices = fields
+            .map((field) => steps.findIndex((step) => step === field.step))
             .filter((index) => index !== -1);
 
-        const nextIndices = indices.filter((index) => index > current);
-        const previousIndices = indices.filter((index) => index < current);
+        const previousIndex = Math.max(
+            ...indices.filter((index) => index < current),
+            -1,
+        );
+        const nextIndex = Math.min(
+            ...indices.filter((index) => index > current),
+            Infinity,
+        );
 
-        const nextIndex =
-            nextIndices.length > 0 ? Math.min(...nextIndices) : -1;
-        const previousIndex =
-            previousIndices.length > 0 ? Math.max(...previousIndices) : -1;
+        return {
+            current,
 
-        const next = nextIndex !== -1 ? steps[nextIndex] : null;
-        const previous = previousIndex !== -1 ? steps[previousIndex] : null;
-
-        return { current, next, previous };
+            previous: previousIndex === -1 ? null : steps[previousIndex],
+            next: nextIndex === Infinity ? null : steps[nextIndex],
+        };
     }, [step, steps, fields]);
 }

@@ -1,14 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import * as z from 'zod';
-import { useId, useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import type {
     FieldProps,
     Fields,
     FormikateProps,
     FormikateReturn,
     FormProps,
-    SectionProps,
     Step,
 } from './types';
 import { Formik, type FormikValues } from 'formik';
@@ -18,6 +16,7 @@ import {
     internalState,
     intoZodSchema,
     useContext,
+    useIntoField,
     useLifecycle,
     useMutate,
     useReset,
@@ -33,17 +32,27 @@ export function useFormikate({
 
     const { current, next, previous } = useSteps({ step, steps, fields });
 
-    useReset({ steps, setStep });
+    useReset({ initialStep, steps, setStep });
+
+    const progress = useMemo(
+        () =>
+            new Set(
+                fields
+                    .map((field) => field.step)
+                    .sort((a, b) => steps.indexOf(a) - steps.indexOf(b)),
+            ),
+        [fields, steps],
+    );
 
     return useMemo(
         () => ({
             isNext: next != null,
             isPrevious: previous != null,
             step,
-            progress: {
-                current: current + 1,
-                total: fields.filter((field) => field.step).length + 1,
-            },
+            progress: [...progress].map((x) => ({
+                step: x,
+                current: x === step,
+            })),
             next: () => next != null && setStep(next),
             previous: () => previous != null && setStep(previous),
             goto: (step) => setStep(step),
@@ -65,7 +74,7 @@ export function useFormikate({
                 ),
             },
         }),
-        [current, fields, next, previous, step, steps],
+        [current, fields, next, previous, progress, step, steps],
     );
 }
 
@@ -101,27 +110,12 @@ export function Form<Values extends FormikValues>({
 export function Field({ children, ...props }: FieldProps): null | ReactElement {
     const context = useContext();
     const state = useMemo(() => context?.[internalState], [context]);
+    const field = useIntoField(props);
 
-    useLifecycle(props);
-    useMutate(props);
+    useLifecycle(field);
+    useMutate(field);
 
-    if (state.step != null && state.step !== props.step) return null;
-
-    return <>{children}</>;
-}
-
-export function Section({ step, children }: SectionProps) {
-    const name = useId();
-    const context = useContext();
-    const state = useMemo(() => context?.[internalState], [context]);
-
-    useLifecycle({
-        name: `formikate.section.${name}`,
-        step,
-        validate: z.any(),
-    });
-
-    if (state.step != null && state.step !== step) return null;
+    if (state.step != null && state.step !== field.step) return null;
 
     return <>{children}</>;
 }
