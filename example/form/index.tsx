@@ -54,6 +54,8 @@ export default function Details(): ReactElement {
                     }}
                     onSubmit={props.handleSubmit}
                 >
+                    <pre>{JSON.stringify(props.values, null, 2)}</pre>
+
                     <Field
                         name="name"
                         step={Steps.Name}
