@@ -2,120 +2,105 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import type {
+    Field,
     FieldProps,
     Fields,
     FormikateProps,
     FormikateReturn,
     FormProps,
     Step,
-} from './types';
-import { Formik, type FormikValues } from 'formik';
-import {
-    Context,
-    Expose,
-    internalState,
-    intoZodSchema,
-    useContext,
-    useIntoField,
-    useLifecycle,
-    useMutate,
-    useReset,
-    useSteps,
-} from './utils';
+} from './types.js';
+import { FormikContext, useFormik, type FormikValues } from 'formik';
+import { Context, internalState } from './context/index.js';
+import { useField } from './hooks/field/index.js';
+import { useLifecycle } from './hooks/lifecycle/index.js';
+import { useMutate } from './hooks/mutate/index.js';
+import { useReset } from './hooks/reset/index.js';
 
-export function useFormikate({
+import { useSteps } from './hooks/steps/index.js';
+import { useSchema } from './hooks/schema/index.js';
+import { useConfig } from './hooks/config/index.js';
+import { Expose } from './components/expose/index.js';
+import { useContext } from './context/index.js';
+
+/**
+ * @name useForm
+ * @description The primary hook for creating and managing a multi-step form.
+ * @param {FormikateProps<Values>} props The configuration options for the form.
+ * @returns {FormikateReturn<Values>} The state and methods for managing the form.
+ */
+export function useForm<Values extends FormikValues>({
     initialStep,
-    steps,
-}: FormikateProps): FormikateReturn {
+    stepSequence = [],
+    ...props
+}: FormikateProps<Values>): FormikateReturn<Values> {
     const [step, setStep] = useState<null | Step>(initialStep);
     const [fields, setFields] = useState<Fields>([]);
 
-    const { current, next, previous } = useSteps({ step, steps, fields });
+    const { current, next, previous } = useSteps<Values>({
+        step,
+        stepSequence,
+        fields,
+    });
 
-    useReset({ initialStep, steps, setStep });
+    const schema = useSchema({ fields, step, stepSequence, current });
+    const form = useFormik<Values>({ ...props, validationSchema: schema });
 
-    const progress = useMemo(
-        () =>
-            new Set(
-                fields
-                    .map((field) => field.step)
-                    .sort((a, b) => steps.indexOf(a) - steps.indexOf(b)),
-            ),
-        [fields, steps],
-    );
+    useReset<Values>({ initialStep, stepSequence, setStep });
 
-    return useMemo(
-        () => ({
-            isNext: next != null,
-            isPrevious: previous != null,
-            step,
-            progress: [...progress].map((x) => ({
-                step: x,
-                current: x === step,
-            })),
-            next: () => next != null && setStep(next),
-            previous: () => previous != null && setStep(previous),
-            goto: (step) => setStep(step),
-            [internalState]: {
-                step,
-                fields,
-                steps,
-                setStep,
-                setFields,
-                currentStepIndex: current,
-                validationSchema: intoZodSchema(
-                    fields.filter((field) => {
-                        if (step == null) return true;
-                        const fieldStep = steps.findIndex(
-                            (x) => x === field.step,
-                        );
-                        return fieldStep !== -1 && fieldStep <= current;
-                    }),
-                ),
-            },
-        }),
-        [current, fields, next, previous, progress, step, steps],
-    );
+    return useConfig({
+        current,
+        fields,
+        form,
+        next,
+        previous,
+        step,
+        stepSequence,
+        setStep,
+        setFields,
+    });
 }
 
+/**
+ * @name Form
+ * @description The main form component that provides the Formik and Formikate contexts.
+ * @param {FormProps<Values>} props The props for the form component.
+ * @returns {React.ReactElement} The rendered form component.
+ */
 export function Form<Values extends FormikValues>({
+    config,
     children,
     ...props
 }: FormProps<Values>) {
-    const formikate = useMemo(
-        () => props.validationSchema ?? props.validate,
-        [props.validationSchema, props.validate],
-    );
-
     return (
-        <Context.Provider value={formikate}>
-            <Formik
-                {...props}
-                validate={undefined}
-                validationSchema={formikate[internalState].validationSchema}
-            >
-                {(props) => (
-                    <>
-                        {typeof children === 'function'
-                            ? children(props)
-                            : children}
-                        <Expose />
-                    </>
-                )}
-            </Formik>
+        <Context.Provider
+            value={config as unknown as FormikateReturn<FormikValues>}
+        >
+            <FormikContext value={config[internalState].form}>
+                <form {...props}>
+                    {children}
+                    <Expose />
+                </form>
+            </FormikContext>
         </Context.Provider>
     );
 }
 
+/**
+ * @name Field
+ * @description A component for defining a field within the form.
+ * @param {FieldProps} props The props for the field component.
+ * @returns {null | React.ReactElement} The rendered field's children or null if the field is not in the current step.
+ */
 export function Field({ children, ...props }: FieldProps): null | ReactElement {
     const context = useContext();
     const state = useMemo(() => context?.[internalState], [context]);
-    const field = useIntoField(props);
+    const field = useField(props);
 
     useLifecycle(field);
     useMutate(field);
 
-    if (state.step != null && state.step !== field.step) return null;
-
-    return <>{children}</>;
+    return state.step != null && state.step !== field.step ? null : (
+        <>{children}</>
+    );
 }

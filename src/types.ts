@@ -1,29 +1,19 @@
-import type { FormikConfig, FormikValues } from 'formik';
+import type { FormikConfig, FormikValues, useFormik } from 'formik';
 import * as z from 'zod';
-import type { internalState } from './utils';
+import type { internalState } from './context/index.js';
+import type { ReactNode } from 'react';
 
 export type Step = string | number | symbol;
 
-export type FormikateProps = {
-    initialStep: null | Step;
-    steps: Step[];
-};
+export type FormikateProps<Values extends FormikValues> =
+    FormikConfig<Values> & {
+        initialStep: null | Step;
+        stepSequence?: Step[];
+    };
 
-export type ResetProps = Pick<FormikateProps, 'steps' | 'initialStep'> & {
-    setStep: React.Dispatch<React.SetStateAction<Step | null>>;
-};
-
-export type StepsProps = {
-    step: Step | null;
-    steps: Step[];
-    fields: Fields;
-};
-
-export type LifecycleProps = Field;
-
-export type MutateProps = Field;
-
-export type FormikateReturn = {
+export type FormikateReturn<Values extends FormikValues> = ReturnType<
+    typeof useFormik<Values>
+> & {
     next(): void;
     previous(): void;
     step: Step | null;
@@ -35,13 +25,13 @@ export type FormikateReturn = {
     }[];
     goto(step: Step): void;
     [internalState]: {
+        form: ReturnType<typeof useFormik<Values>>;
         step: null | Step;
         fields: Fields;
-        steps: Step[];
+        stepSequence: Step[];
         setStep: React.Dispatch<React.SetStateAction<Step | null>>;
         setFields: React.Dispatch<React.SetStateAction<Fields>>;
-        currentStepIndex: number;
-        validationSchema: { validate: (values: FormikValues) => Promise<void> };
+        currentStepIndex: null | number;
     };
 };
 
@@ -62,17 +52,10 @@ export type FieldProps = (Field | VirtualField) & {
     children: React.ReactNode;
 };
 
-export type FormProps<Values extends FormikValues> = Omit<
-    FormikConfig<Values>,
-    'validationSchema' | 'validate'
-> &
-    (
-        | {
-              validate: FormikateReturn;
-              validationSchema?: never;
-          }
-        | {
-              validate?: never;
-              validationSchema: FormikateReturn;
-          }
-    );
+export type FormProps<Values extends FormikValues> = React.DetailedHTMLProps<
+    React.FormHTMLAttributes<HTMLFormElement>,
+    HTMLFormElement
+> & {
+    config: FormikateReturn<Values>;
+    children: ReactNode;
+};
