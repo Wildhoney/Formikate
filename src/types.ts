@@ -3,7 +3,7 @@ import * as z from 'zod';
 import type { internalState } from './context/index.js';
 import type { ReactNode } from 'react';
 
-export type Step = string | number | symbol;
+export type Step = string | number;
 
 export type FormikateProps<Values extends FormikValues> =
     FormikConfig<Values> & {
@@ -14,16 +14,16 @@ export type FormikateProps<Values extends FormikValues> =
 export type FormikateReturn<Values extends FormikValues> = ReturnType<
     typeof useFormik<Values>
 > & {
-    next(): void;
-    previous(): void;
     step: Step | null;
-    isNext: boolean;
-    isPrevious: boolean;
     progress: {
         step: Step;
         current: boolean;
     }[];
-    goto(step: Step): void;
+    isNext: boolean;
+    isPrevious: boolean;
+    handlePrevious(): void;
+    handleNext(): void;
+    handleGoto(step: Step): void;
     [internalState]: {
         form: ReturnType<typeof useFormik<Values>>;
         step: null | Step;
@@ -49,6 +49,7 @@ export type VirtualField = {
 export type Fields = Field[];
 
 export type FieldProps = (Field | VirtualField) & {
+    hidden?: boolean;
     children: React.ReactNode;
 };
 

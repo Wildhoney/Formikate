@@ -29,9 +29,9 @@ export function useConfig<Values extends FormikValues>({
                 step: x,
                 current: x === step,
             })),
-            next: () => next != null && setStep(next),
-            previous: () => previous != null && setStep(previous),
-            goto: (step) => setStep(step),
+            handleNext: () => next != null && setStep(next),
+            handlePrevious: () => previous != null && setStep(previous),
+            handleGoto: (step) => setStep(step),
             [internalState]: {
                 form,
                 step,

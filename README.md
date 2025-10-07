@@ -1,127 +1,151 @@
-![Formikate](media/logo.png)
+# <img src="media/icon.png" alt="Formikate" width="32" height="32" /> Formikate
 
 🪚 Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
 
 ## Features
 
-- Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod) or [`yup`](https://github.com/jquense/yup) schemas
+- Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod)
 - Supports multi-step forms using the `step` property
 - Fields that get hidden are reset using the `initialValues` object
 - Navigates to the earliest step that contains a validation error on submit
 
 ## Getting started
 
-Define your validation schema, steps, and use the `useFormikate` hook to manage the form state. Then, use the `Form` and `Field` components to build your form.
+Begin by defining both your validation schema and, optionally, the steps in your form:
 
 ```tsx
-import * as z from 'zod';
-import { Form, Field, useFormikate } from 'formikate';
-import { ReactElement, useCallback } from 'react';
-
-const enum Steps {
-    Name,
-    Address,
+export const enum Steps {
+    Personal,
+    Delivery,
     Review,
 }
 
-const schema = z.object({
-    name: z.string().min(1).max(100),
-    age: z.string().min(2).max(100),
-    telephone: z.string().min(1).max(15),
+export const schema = z.object({
+    name: z.string(),
+    address: z.string(),
+    guest: z.boolean(),
 });
+```
 
-type Schema = z.infer<typeof schema>;
+Next import the `useForm` hook &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik) with the addition of two more:
 
-export default function Details(): ReactElement {
-    const formikate = useFormikate({
-        initialStep: Steps.Name,
-        steps: [Steps.Name, Steps.Address, Steps.Review],
-    });
+- `initialStep`: Step to initially start on when rendering the form.
+- `stepSequence`: Logical sequence of the steps.
 
-    const handleSubmit = useCallback(
-        (values: Schema) => {
-            if (formikate.step === Steps.Review) {
-                return void console.log('Submitting', values);
-            }
+Note that if you change `stepSequence` after rendering the form and you have multiple steps, it will reset the form back to the `initialStep` or the first step in the sequence. Also note that `stepSequence` has zero effect on which steps are visible &ndash; that is determined by the `Field` components later on.
 
-            formikate.next();
-        },
-        [formikate],
-    );
+```tsx
+const form = useForm({
+    initialStep: Steps.Personal,
+    stepSequence: [Steps.Personal, Steps.Delivery, Steps.Review],
+    validateOnBlur: false,
+    validateOnChange: false,
+    initialValues: { name: '', address: '', guest: false },
+    onSubmit(values: Schema) {
+        console.log(values);
+    },
+});
+```
 
-    return (
-        <Form
-            initialValues={{ name: '', age: '', telephone: '' }}
-            validateOnBlur={false}
-            validateOnChange={false}
-            validationSchema={formikate}
-            onSubmit={handleSubmit}
-        >
-            {(props) => (
-                <form onSubmit={props.handleSubmit}>
-                    <Field
-                        name="name"
-                        step={Steps.Name}
-                        validate={schema.shape.name}
-                    >
-                        <label>Name</label>
-                        <input type="text" {...props.getFieldProps('name')} />
-                        <div>{props.errors.name}</div>
-                    </Field>
+You can now use `form` to access [all of the usual](https://formik.org/docs/api/formik#props-1) Formik properties such as `form.values` and `form.errors`.
 
-                    <Field virtual step={Steps.Review}>
-                        Review
-                        <pre>{JSON.stringify(props.values, null, 2)}</pre>
-                    </Field>
+Next we can begin rendering our `Form` and `Field` components, conditionally or otherwise, and the rendering of these components determines which fields are applicable to your form based on the current state. Pass in the `form` to the `config` parameter of `Form` and any other [`form` attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form) along with the submit handler.
 
-                    <Field
-                        name="age"
-                        step={Steps.Name}
-                        validate={schema.shape.age}
-                    >
-                        <label>Age</label>
-                        <input type="text" {...props.getFieldProps('age')} />
-                        <div>{props.errors.age}</div>
-                    </Field>
+```tsx
+<Form config={form} onSubmit={form.handleSubmit}>
+    <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
+        <input type="text" {...form.getFieldProps('name')} />
+    </Field>
 
-                    {props.values.name !== 'Adam' && (
-                        <Field
-                            name="telephone"
-                            step={Steps.Address}
-                            validate={schema.shape.telephone}
-                        >
-                            <label>Telephone</label>
-                            <input
-                                type="text"
-                                {...props.getFieldProps('telephone')}
-                            />
-                            <div>{props.errors.telephone}</div>
-                        </Field>
-                    )}
+    <Field name="address" step={Steps.Delivery} validate={schema.shape.address}>
+        <input type="address" {...form.getFieldProps('address')} />
+    </Field>
+</Form>
+```
 
-                    <button
-                        type="button"
-                        disabled={!formikate.isPrevious}
-                        onClick={formikate.previous}
-                    >
-                        Back
-                    </button>
+In the above case the form will be rendered as two steps, within the submit handler you can check which step has been submitted, assuming there are no validation errors, and determine whether to submit the form to the backend or move to the next step using `form.handleNext()`, for example you might do:
 
-                    <button type="submit">
-                        {formikate.step === Steps.Review ? 'Submit' : 'Next'}
-                    </button>
-
-                    <div>
-                        <strong>
-                            {formikate.progress.current} of{' '}
-                            {formikate.progress.total}
-                        </strong>
-                    </div>
-                </form>
-            )}
-        </Form>
-    );
+```tsx
+onSubmit(values: Schema) {
+    if (form.step === Steps.Review) console.log('Submitting', values);
+    else form.handleNext();
 }
 ```
 
-> **Note:** The `steps` array in `useFormikate` defines the order of the steps. It does not determine which steps are visible. The visibility of steps is determined by the `<Field>` components and their `step` prop. If you change the order of `steps` during render, the form will reset to either the initial step, if defined, otherwise the first step in the new order.
+However you may have noticed we have a `guest` parameter as well, using that we can conditionally show the `address` field &ndash; if a user is a guest we need to ask for the address, otherwise we'll know their address from their user profile. When we conditionally render `address` the validation schema and values will be kept in sync.
+
+```tsx
+<Form config={form} onSubmit={form.handleSubmit}>
+    <Field name="guest" step={Steps.Personal} validate={schema.shape.guest}>
+        <input type="checkbox" {...form.getFieldProps('guest')} />
+    </Field>
+
+    <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
+        <input type="text" {...form.getFieldProps('name')} />
+    </Field>
+
+    {form.values.guest && (
+        <Field
+            name="address"
+            step={Steps.Delivery}
+            validate={schema.shape.address}
+        >
+            <input type="address" {...form.getFieldProps('address')} />
+        </Field>
+    )}
+</Form>
+```
+
+Note that if you want to just hide the `Field` and retain its value then you can use the `hidden` property.
+
+When the user selects they are a guest, our form becomes a two step form, otherwise it's a one step form. However you'll also notice we have a review step which we also need to incorporate to make our form either a two or three step form:
+
+```tsx
+<Field virtual step={Steps.Review}>
+    <ul>
+        <li>Guest: {form.values.guest ? 'Yes' : 'No'}</li>
+        <li>Name: {form.values.name}</li>
+        <li>Address: {form.values.address}</li>
+    </ul>
+</Field>
+```
+
+By using the `virtual` property on the `Field` component we can instruct Formikate that there's no validation to be applied but it still shows up as a step in our form.
+
+Last of all we need to add the buttons to our form for the user to navigate and submit:
+
+```tsx
+<>
+    <button
+        type="button"
+        disabled={!form.isPrevious}
+        onClick={form.handlePrevious}
+    >
+        Back
+    </button>
+
+    <button type="submit" disabled={form.isSubmitting}>
+        {form.step === Steps.Review ? 'Submit' : 'Next'}
+    </button>
+</>
+```
+
+We can also display a nice list of the current form steps using the `form.progress` vector and for that we may also want to give our `Step` enum actual labels:
+
+```tsx
+export const enum Steps {
+    Personal = 'Personal',
+    Delivery = 'Delivery',
+    Review = 'Review',
+}
+
+// ...
+
+<ul>
+    {form.progress.map((progress) => (
+        <li key={progress.step} className={progress.current ? 'active' : ''}>
+            {progress.step}
+        </li>
+    ))}
+</ul>;
+```

@@ -18,7 +18,7 @@ export default function Details(): ReactElement {
         ...config,
         async onSubmit(values: Schema) {
             await new Promise((ƒ) => setTimeout(ƒ, 2000));
-            if (form.step !== Steps.Review) form.next();
+            if (form.step !== Steps.Review) form.handleNext();
             else return void console.log('Submitting', values);
         },
     });

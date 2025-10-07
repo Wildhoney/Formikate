@@ -92,7 +92,11 @@ export function Form<Values extends FormikValues>({
  * @param {FieldProps} props The props for the field component.
  * @returns {null | React.ReactElement} The rendered field's children or null if the field is not in the current step.
  */
-export function Field({ children, ...props }: FieldProps): null | ReactElement {
+export function Field({
+    hidden = false,
+    children,
+    ...props
+}: FieldProps): null | ReactElement {
     const context = useContext();
     const state = useMemo(() => context?.[internalState], [context]);
     const field = useField(props);
@@ -100,7 +104,8 @@ export function Field({ children, ...props }: FieldProps): null | ReactElement {
     useLifecycle(field);
     useMutate(field);
 
-    return state.step != null && state.step !== field.step ? null : (
+    return hidden ||
+        (state.step != null && state.step !== field.step) ? null : (
         <>{children}</>
     );
 }

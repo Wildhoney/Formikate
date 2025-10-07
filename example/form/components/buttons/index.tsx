@@ -9,7 +9,7 @@ export default function Buttons() {
             <button
                 type="button"
                 disabled={!form.isPrevious}
-                onClick={form.previous}
+                onClick={form.handlePrevious}
             >
                 Back
             </button>
@@ -18,7 +18,7 @@ export default function Buttons() {
                 {form.step === Steps.Review ? 'Submit' : 'Next'}
             </button>
 
-            <button type="button" onClick={() => form.goto(Steps.Name)}>
+            <button type="button" onClick={() => form.handleGoto(Steps.Name)}>
                 Reset
             </button>
         </section>
