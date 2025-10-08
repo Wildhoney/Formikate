@@ -28,3 +28,11 @@ fmt:
 
 clean:
 	rm -rf dist
+
+deploy:
+	yarn --force
+	make build
+	npx commit-and-tag-version
+	npm publish
+	git push
+	git push --tags
