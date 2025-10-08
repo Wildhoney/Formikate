@@ -18,7 +18,7 @@ export default defineConfig({
             fileName: 'formikate',
         },
         rollupOptions: {
-            external: ['react', 'react-dom', 'formik'],
+            external: ['react', 'react-dom', 'formik', 'zod'],
             output: {
                 globals: {
                     react: 'React',
