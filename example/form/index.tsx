@@ -24,40 +24,54 @@ export default function Details(): ReactElement {
     });
 
     return (
-        <Form config={form} onSubmit={form.handleSubmit}>
-            <Preview />
+        <Form controller={form}>
+            <form onSubmit={form.handleSubmit}>
+                <Preview />
 
-            <Field name="name" step={Steps.Name} validate={schema.shape.name}>
-                <Name />
-            </Field>
-
-            <Field name="guest" step={Steps.Name} validate={schema.shape.guest}>
-                <Guest />
-            </Field>
-
-            {form.values.guest === false && (
-                <Field name="age" step={Steps.Name} validate={schema.shape.age}>
-                    <Age />
-                </Field>
-            )}
-
-            {form.values.guest === false && (
                 <Field
-                    name="telephone"
-                    step={Steps.Address}
-                    validate={schema.shape.telephone}
+                    name="name"
+                    step={Steps.Name}
+                    validate={schema.shape.name}
                 >
-                    <Telephone />
+                    <Name />
                 </Field>
-            )}
 
-            <Field virtual step={Steps.Review}>
-                <Review />
-            </Field>
+                <Field
+                    name="guest"
+                    step={Steps.Name}
+                    validate={schema.shape.guest}
+                >
+                    <Guest />
+                </Field>
 
-            <Buttons />
+                {form.values.guest === false && (
+                    <Field
+                        name="age"
+                        step={Steps.Name}
+                        validate={schema.shape.age}
+                    >
+                        <Age />
+                    </Field>
+                )}
 
-            <Progress />
+                {form.values.guest === false && (
+                    <Field
+                        name="telephone"
+                        step={Steps.Address}
+                        validate={schema.shape.telephone}
+                    >
+                        <Telephone />
+                    </Field>
+                )}
+
+                <Field virtual step={Steps.Review}>
+                    <Review />
+                </Field>
+
+                <Buttons />
+
+                <Progress />
+            </form>
         </Form>
     );
 }

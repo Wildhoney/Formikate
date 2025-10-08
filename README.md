@@ -49,17 +49,23 @@ const form = useForm({
 
 You can now use `form` to access [all of the usual](https://formik.org/docs/api/formik#props-1) Formik properties such as `form.values` and `form.errors`.
 
-Next we can begin rendering our `Form` and `Field` components, conditionally or otherwise, and the rendering of these components determines which fields are applicable to your form based on the current state. Pass in the `form` to the `config` parameter of `Form` and any other [`form` attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form) along with the submit handler.
+Next we can begin rendering our `Form` and `Field` components, conditionally or otherwise, and the rendering of these components determines which fields are applicable to your form based on the current state. Simply pass in the `form` to the `controller` parameter of `Form`:
 
 ```tsx
-<Form config={form} onSubmit={form.handleSubmit}>
-    <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
-        <input type="text" {...form.getFieldProps('name')} />
-    </Field>
+<Form controller={form}>
+    <form onSubmit={form.handleSubmit}>
+        <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
+            <input type="text" {...form.getFieldProps('name')} />
+        </Field>
 
-    <Field name="address" step={Steps.Delivery} validate={schema.shape.address}>
-        <input type="address" {...form.getFieldProps('address')} />
-    </Field>
+        <Field
+            name="address"
+            step={Steps.Delivery}
+            validate={schema.shape.address}
+        >
+            <input type="address" {...form.getFieldProps('address')} />
+        </Field>
+    </form>
 </Form>
 ```
 
@@ -75,24 +81,26 @@ onSubmit(values: Schema) {
 However you may have noticed we have a `guest` parameter as well, using that we can conditionally show the `address` field &ndash; if a user is a guest we need to ask for the address, otherwise we'll know their address from their user profile. When we conditionally render `address` the validation schema and values will be kept in sync.
 
 ```tsx
-<Form config={form} onSubmit={form.handleSubmit}>
-    <Field name="guest" step={Steps.Personal} validate={schema.shape.guest}>
-        <input type="checkbox" {...form.getFieldProps('guest')} />
-    </Field>
-
-    <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
-        <input type="text" {...form.getFieldProps('name')} />
-    </Field>
-
-    {form.values.guest && (
-        <Field
-            name="address"
-            step={Steps.Delivery}
-            validate={schema.shape.address}
-        >
-            <input type="address" {...form.getFieldProps('address')} />
+<Form controller={form}>
+    <form onSubmit={form.handleSubmit}>
+        <Field name="guest" step={Steps.Personal} validate={schema.shape.guest}>
+            <input type="checkbox" {...form.getFieldProps('guest')} />
         </Field>
-    )}
+
+        <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
+            <input type="text" {...form.getFieldProps('name')} />
+        </Field>
+
+        {form.values.guest && (
+            <Field
+                name="address"
+                step={Steps.Delivery}
+                validate={schema.shape.address}
+            >
+                <input type="address" {...form.getFieldProps('address')} />
+            </Field>
+        )}
+    </form>
 </Form>
 ```
 

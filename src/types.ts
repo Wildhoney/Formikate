@@ -53,10 +53,7 @@ export type FieldProps = (Field | VirtualField) & {
     children: React.ReactNode;
 };
 
-export type FormProps<Values extends FormikValues> = React.DetailedHTMLProps<
-    React.FormHTMLAttributes<HTMLFormElement>,
-    HTMLFormElement
-> & {
-    config: FormikateReturn<Values>;
+export type FormProps<Values extends FormikValues> = {
+    controller: FormikateReturn<Values>;
     children: ReactNode;
 };

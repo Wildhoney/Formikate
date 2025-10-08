@@ -68,19 +68,16 @@ export function useForm<Values extends FormikValues>({
  * @returns {React.ReactElement} The rendered form component.
  */
 export function Form<Values extends FormikValues>({
-    config,
+    controller,
     children,
-    ...props
 }: FormProps<Values>) {
     return (
         <Context.Provider
-            value={config as unknown as FormikateReturn<FormikValues>}
+            value={controller as unknown as FormikateReturn<FormikValues>}
         >
-            <FormikContext value={config[internalState].form}>
-                <form {...props}>
-                    {children}
-                    <Expose />
-                </form>
+            <FormikContext value={controller[internalState].form}>
+                {children}
+                <Expose />
             </FormikContext>
         </Context.Provider>
     );
