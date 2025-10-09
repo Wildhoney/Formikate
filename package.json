@@ -1,7 +1,7 @@
 {
     "name": "formikate",
     "private": false,
-    "version": "0.3.6",
+    "version": "0.3.7",
     "type": "module",
     "main": "./dist/formikate.umd.cjs",
     "module": "./dist/formikate.js",
