@@ -30,7 +30,7 @@ import { useContext } from './context/index.js';
  * @returns {FormikateReturn<Values>} The state and methods for managing the form.
  */
 export function useForm<Values extends FormikValues>({
-    initialStep,
+    initialStep = null,
     stepSequence = [],
     ...props
 }: FormikateProps<Values>): FormikateReturn<Values> {

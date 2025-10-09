@@ -5,18 +5,20 @@ import type { ReactNode } from 'react';
 
 export type Step = string | number;
 
-export type FormikateProps<Values extends FormikValues> =
-    FormikConfig<Values> & {
-        initialStep: null | Step;
-        stepSequence?: Step[];
-    };
+export type FormikateProps<Values extends FormikValues> = Omit<
+    FormikConfig<Values>,
+    'validate' | 'validationSchema'
+> & {
+    initialStep?: null | Step;
+    stepSequence?: Step[];
+};
 
 export type FormikateReturn<Values extends FormikValues> = ReturnType<
     typeof useFormik<Values>
 > & {
     step: Step | null;
     progress: {
-        step: Step;
+        step: null | Step;
         current: boolean;
     }[];
     isNext: boolean;
@@ -37,13 +39,12 @@ export type FormikateReturn<Values extends FormikValues> = ReturnType<
 
 export type Field = {
     name: string;
-    step: Step;
+    step?: null | Step;
     validate: z.ZodType;
 };
 
-export type VirtualField = {
+export type VirtualField = Pick<Field, 'step'> & {
     virtual: true;
-    step: Step;
 };
 
 export type Fields = Field[];

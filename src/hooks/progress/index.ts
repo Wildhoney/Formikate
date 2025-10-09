@@ -8,6 +8,7 @@ export function useProgress({ fields, stepSequence }: ProgressProps) {
             new Set(
                 fields
                     .map((field: Field) => field.step)
+                    .filter((step): step is Step => step != null)
                     .sort(
                         (a: Step, b: Step) =>
                             stepSequence.indexOf(a) - stepSequence.indexOf(b),

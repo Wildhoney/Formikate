@@ -4,7 +4,7 @@ import type { FormikValues } from 'formik';
 import { internalState } from '../../context/index.js';
 import { useProgress } from '../progress/index.js';
 import type { ConfigProps } from './types.js';
-import type { FormikateReturn } from '~/types.js';
+import type { FormikateReturn, Step } from '~/types.js';
 
 export function useConfig<Values extends FormikValues>({
     current,
@@ -26,7 +26,7 @@ export function useConfig<Values extends FormikValues>({
             isPrevious: previous != null,
             step,
             progress: [...progress].map((x) => ({
-                step: x,
+                step: x as Step | null,
                 current: x === step,
             })),
             handleNext: () => next != null && setStep(next),

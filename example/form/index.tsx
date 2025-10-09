@@ -17,7 +17,7 @@ export default function Details(): ReactElement {
     const form = useForm({
         ...config,
         async onSubmit(values: Schema) {
-            await new Promise((ƒ) => setTimeout(ƒ, 2000));
+            await new Promise((ƒ) => setTimeout(ƒ, 2_000));
             if (form.step !== Steps.Review) form.handleNext();
             else return void console.log('Submitting', values);
         },
