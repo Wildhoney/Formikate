@@ -104,7 +104,7 @@ However you may have noticed we have a `guest` parameter as well, using that we 
 </Form>
 ```
 
-Note that if you want to just hide the `Field` and retain its value then you can use the `hidden` property.
+Note that if you want to just hide the `Field` and retain its value then you can use the `hidden` property. You can also provide a type-safe `default` prop to set a field's initial value on mount &ndash; when the field unmounts, it will reset to either the `default` value or the `initialValue` from the form.
 
 When the user selects they are a guest, our form becomes a two step form, otherwise it's a one step form. However you'll also notice we have a review step which we also need to incorporate to make our form either a two or three step form:
 

@@ -9,6 +9,7 @@ import type {
     FormikateReturn,
     FormProps,
     Step,
+    VirtualField,
 } from './types.js';
 import { FormikContext, useFormik, type FormikValues } from 'formik';
 import { Context, internalState } from './context/index.js';
@@ -83,26 +84,38 @@ export function Form<Values extends FormikValues>({
     );
 }
 
-/**
- * @name Field
- * @description A component for defining a field within the form.
- * @param {FieldProps} props The props for the field component.
- * @returns {null | React.ReactElement} The rendered field's children or null if the field is not in the current step.
- */
-export function Field({
+export function Field<T>(
+    props: Field<T> & {
+        hidden?: boolean;
+        default?: T;
+        children: React.ReactNode;
+    }
+): null | ReactElement;
+
+export function Field(
+    props: VirtualField & {
+        hidden?: boolean;
+        children: React.ReactNode;
+    }
+): null | ReactElement;
+
+export function Field<T = unknown>({
     hidden = false,
+    default: defaultValue,
     children,
     ...props
-}: FieldProps): null | ReactElement {
+}: FieldProps<T>): null | ReactElement {
     const context = useContext();
     const state = useMemo(() => context?.[internalState], [context]);
     const field = useField(props);
 
-    useLifecycle(field);
+    useLifecycle({ ...field, default: defaultValue });
     useMutate(field);
 
     return hidden ||
-        (state.step != null && state.step !== field.step) ? null : (
+        (state.step != null &&
+            field.step != null &&
+            state.step !== field.step) ? null : (
         <>{children}</>
     );
 }

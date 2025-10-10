@@ -37,20 +37,21 @@ export type FormikateReturn<Values extends FormikValues> = ReturnType<
     };
 };
 
-export type Field = {
+export type Field<T = unknown> = {
     name: string;
     step?: null | Step;
-    validate: z.ZodType;
+    validate: z.ZodType<T>;
 };
 
 export type VirtualField = Pick<Field, 'step'> & {
     virtual: true;
 };
 
-export type Fields = Field[];
+export type Fields = Field<unknown>[];
 
-export type FieldProps = (Field | VirtualField) & {
+export type FieldProps<T = unknown> = (Field<T> | VirtualField) & {
     hidden?: boolean;
+    default?: T;
     children: React.ReactNode;
 };
 
