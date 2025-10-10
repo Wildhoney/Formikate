@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.8](https://github.com/Wildhoney/Schematik/compare/v0.3.7...v0.3.8) (2025-10-10)
+
+
+### Features
+
+* added default prop to <Field> ([e5b3fbd](https://github.com/Wildhoney/Schematik/commit/e5b3fbdb2f2d39a9f2bfbba710190364821bfe81))
+
 ## [0.3.7](https://github.com/Wildhoney/Schematik/compare/v0.3.6...v0.3.7) (2025-10-09)
 
 ## [0.3.6](https://github.com/Wildhoney/Schematik/compare/v0.3.5...v0.3.6) (2025-10-09)
