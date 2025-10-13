@@ -975,7 +975,11 @@ describe('Field Component', () => {
                 const form = useForm({
                     initialStep: Steps.Form,
                     stepSequence: [Steps.Form, Steps.Extra, Steps.Review],
-                    initialValues: { shouldShowExtra: false, name: 'test', extra: '' },
+                    initialValues: {
+                        shouldShowExtra: false,
+                        name: 'test',
+                        extra: '',
+                    },
                     onSubmit: async () => {
                         form.setFieldValue('shouldShowExtra', true);
                         if (form.step !== Steps.Review) {
