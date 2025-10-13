@@ -89,9 +89,7 @@ describe('Field Component', () => {
             getByTestId('toggle-button').click();
 
             await waitFor(() => {
-                expect(getByTestId('form-value').textContent).toBe(
-                    defaultName,
-                );
+                expect(getByTestId('form-value').textContent).toBe(defaultName);
             });
         });
 
@@ -136,9 +134,7 @@ describe('Field Component', () => {
             getByTestId('toggle-button').click();
 
             await waitFor(() => {
-                expect(getByTestId('form-value').textContent).toBe(
-                    initialName,
-                );
+                expect(getByTestId('form-value').textContent).toBe(initialName);
             });
         });
 
@@ -376,9 +372,7 @@ describe('Field Component', () => {
             }
 
             render(<TestForm />);
-            expect(
-                screen.queryByTestId('name-input'),
-            ).not.toBeInTheDocument();
+            expect(screen.queryByTestId('name-input')).not.toBeInTheDocument();
         });
 
         it('should retain field value when hidden', async () => {
@@ -449,9 +443,7 @@ describe('Field Component', () => {
             }
 
             render(<TestForm />);
-            expect(
-                screen.queryByTestId('review-content'),
-            ).toBeInTheDocument();
+            expect(screen.queryByTestId('review-content')).toBeInTheDocument();
         });
 
         it('should respect step prop on virtual fields', () => {
@@ -575,9 +567,7 @@ describe('Field Component', () => {
                             Hide Email
                         </button>
                         <div data-testid="name-value">{form.values.name}</div>
-                        <div data-testid="email-value">
-                            {form.values.email}
-                        </div>
+                        <div data-testid="email-value">{form.values.email}</div>
                     </Form>
                 );
             }
@@ -587,9 +577,7 @@ describe('Field Component', () => {
             getByTestId('toggle-name').click();
 
             await waitFor(() => {
-                expect(getByTestId('name-value').textContent).toBe(
-                    defaultName,
-                );
+                expect(getByTestId('name-value').textContent).toBe(defaultName);
             });
 
             expect(getByTestId('email-value').textContent).toBe(defaultEmail);
@@ -716,9 +704,7 @@ describe('Field Component', () => {
 
             expect(queryByTestId('address-input')).not.toBeInTheDocument();
 
-            const checkbox = getByTestId(
-                'guest-checkbox',
-            ) as HTMLInputElement;
+            const checkbox = getByTestId('guest-checkbox') as HTMLInputElement;
             checkbox.click();
 
             await waitFor(() => {
@@ -740,11 +726,7 @@ describe('Field Component', () => {
 
                 return (
                     <Form controller={form}>
-                        <Field
-                            name="count"
-                            validate={z.number()}
-                            default={42}
-                        >
+                        <Field name="count" validate={z.number()} default={42}>
                             <input
                                 type="number"
                                 data-testid="count-input"
@@ -758,6 +740,301 @@ describe('Field Component', () => {
             render(<TestForm />);
             const input = screen.getByTestId('count-input') as HTMLInputElement;
             expect(Number(input.value)).toBe(42);
+        });
+    });
+
+    describe('deferred navigation', () => {
+        it('should navigate to correct step after field mount/unmount changes', async () => {
+            const Steps = {
+                Personal: 'personal',
+                Address: 'address',
+                Review: 'review',
+            };
+
+            function TestForm() {
+                const form = useForm({
+                    initialStep: Steps.Personal,
+                    stepSequence: [Steps.Personal, Steps.Address, Steps.Review],
+                    initialValues: { guest: false, name: '', address: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field
+                            name="name"
+                            step={Steps.Personal}
+                            validate={z.string()}
+                        >
+                            <input data-testid="name-input" />
+                        </Field>
+
+                        <Field
+                            name="guest"
+                            step={Steps.Personal}
+                            validate={z.boolean()}
+                        >
+                            <input
+                                type="checkbox"
+                                data-testid="guest-checkbox"
+                                {...form.getFieldProps('guest')}
+                            />
+                        </Field>
+
+                        {form.values.guest === false && (
+                            <Field
+                                name="address"
+                                step={Steps.Address}
+                                validate={z.string()}
+                            >
+                                <input data-testid="address-input" />
+                            </Field>
+                        )}
+
+                        <Field virtual step={Steps.Review}>
+                            <div data-testid="review-content">Review</div>
+                        </Field>
+
+                        <button
+                            data-testid="toggle-and-next"
+                            onClick={() => {
+                                form.setFieldValue('guest', true);
+                                form.handleNext();
+                            }}
+                        >
+                            Toggle and Next
+                        </button>
+
+                        <div data-testid="current-step">{form.step}</div>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            expect(getByTestId('current-step').textContent).toBe(
+                Steps.Personal,
+            );
+
+            // When guest is set to true, the Address field unmounts
+            // so handleNext should skip to Review (the next available step)
+            getByTestId('toggle-and-next').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe(
+                    Steps.Review,
+                );
+            });
+        });
+
+        it('should use latest step calculation when handleNext is deferred', async () => {
+            const Steps = { Step1: 'step1', Step2: 'step2', Step3: 'step3' };
+
+            function TestForm() {
+                const form = useForm({
+                    initialStep: Steps.Step1,
+                    stepSequence: [Steps.Step1, Steps.Step2, Steps.Step3],
+                    initialValues: { skipStep2: false },
+                    onSubmit: () => {},
+                });
+
+                const handleClick = () => {
+                    form.setFieldValue('skipStep2', true);
+                    form.handleNext();
+                };
+
+                return (
+                    <Form controller={form}>
+                        <Field
+                            name="skipStep2"
+                            step={Steps.Step1}
+                            validate={z.boolean()}
+                        >
+                            <input
+                                type="checkbox"
+                                data-testid="skip-checkbox"
+                            />
+                        </Field>
+
+                        {!form.values.skipStep2 && (
+                            <Field
+                                name="field2"
+                                step={Steps.Step2}
+                                validate={z.string()}
+                            >
+                                <input data-testid="field2-input" />
+                            </Field>
+                        )}
+
+                        <Field
+                            name="field3"
+                            step={Steps.Step3}
+                            validate={z.string()}
+                        >
+                            <input data-testid="field3-input" />
+                        </Field>
+
+                        <button data-testid="next-button" onClick={handleClick}>
+                            Next
+                        </button>
+
+                        <div data-testid="current-step">{form.step}</div>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            expect(getByTestId('current-step').textContent).toBe(Steps.Step1);
+
+            // When skipStep2 is set to true, field2 unmounts
+            // so handleNext should skip to Step3 (the next available step)
+            getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe(
+                    Steps.Step3,
+                );
+            });
+        });
+
+        it('should handle rapid handleNext calls correctly', async () => {
+            const Steps = { Step1: 'step1', Step2: 'step2', Step3: 'step3' };
+
+            function TestForm() {
+                const form = useForm({
+                    initialStep: Steps.Step1,
+                    stepSequence: [Steps.Step1, Steps.Step2, Steps.Step3],
+                    initialValues: { field1: '', field2: '', field3: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field
+                            name="field1"
+                            step={Steps.Step1}
+                            validate={z.string()}
+                        >
+                            <input data-testid="field1-input" />
+                        </Field>
+
+                        <Field
+                            name="field2"
+                            step={Steps.Step2}
+                            validate={z.string()}
+                        >
+                            <input data-testid="field2-input" />
+                        </Field>
+
+                        <Field
+                            name="field3"
+                            step={Steps.Step3}
+                            validate={z.string()}
+                        >
+                            <input data-testid="field3-input" />
+                        </Field>
+
+                        <button
+                            data-testid="next-button"
+                            onClick={form.handleNext}
+                        >
+                            Next
+                        </button>
+
+                        <div data-testid="current-step">{form.step}</div>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            expect(getByTestId('current-step').textContent).toBe(Steps.Step1);
+
+            getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe(
+                    Steps.Step2,
+                );
+            });
+
+            getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe(
+                    Steps.Step3,
+                );
+            });
+        });
+
+        it('should handle onSubmit that changes fields then calls handleNext', async () => {
+            const Steps = { Form: 'form', Extra: 'extra', Review: 'review' };
+
+            function TestForm() {
+                const form = useForm({
+                    initialStep: Steps.Form,
+                    stepSequence: [Steps.Form, Steps.Extra, Steps.Review],
+                    initialValues: { shouldShowExtra: false, name: 'test', extra: '' },
+                    onSubmit: async () => {
+                        form.setFieldValue('shouldShowExtra', true);
+                        if (form.step !== Steps.Review) {
+                            form.handleNext();
+                        }
+                    },
+                });
+
+                return (
+                    <Form controller={form}>
+                        <form onSubmit={form.handleSubmit}>
+                            <Field
+                                name="name"
+                                step={Steps.Form}
+                                validate={z.string()}
+                            >
+                                <input
+                                    data-testid="name-input"
+                                    {...form.getFieldProps('name')}
+                                />
+                            </Field>
+
+                            {form.values.shouldShowExtra && (
+                                <Field
+                                    name="extra"
+                                    step={Steps.Extra}
+                                    validate={z.string().optional()}
+                                >
+                                    <input data-testid="extra-input" />
+                                </Field>
+                            )}
+
+                            <Field virtual step={Steps.Review}>
+                                <div data-testid="review-content">Review</div>
+                            </Field>
+
+                            <button type="submit" data-testid="submit-button">
+                                Submit
+                            </button>
+
+                            <div data-testid="current-step">{form.step}</div>
+                        </form>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            expect(getByTestId('current-step').textContent).toBe(Steps.Form);
+
+            getByTestId('submit-button').click();
+
+            // After submit, shouldShowExtra is set to true, mounting the Extra field
+            // handleNext should navigate to Extra step (the newly available step)
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe(
+                    Steps.Extra,
+                );
+            });
         });
     });
 });

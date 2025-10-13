@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { FormikValues } from 'formik';
 
 import { internalState } from '../../context/index.js';
 import { useProgress } from '../progress/index.js';
+import { defer } from './utils.js';
 import type { ConfigProps } from './types.js';
 import type { FormikateReturn, Step } from '~/types.js';
 
@@ -19,6 +20,10 @@ export function useConfig<Values extends FormikValues>({
 }: ConfigProps<Values>): FormikateReturn<Values> {
     const progress = useProgress({ fields, stepSequence });
 
+    const refs = useRef({ next, previous });
+    refs.current.next = next;
+    refs.current.previous = previous;
+
     return useMemo(
         () => ({
             ...form,
@@ -29,9 +34,14 @@ export function useConfig<Values extends FormikValues>({
                 step: x as Step | null,
                 current: x === step,
             })),
-            handleNext: () => next != null && setStep(next),
-            handlePrevious: () => previous != null && setStep(previous),
-            handleGoto: (step) => setStep(step),
+            handleNext: () =>
+                defer(() => refs.current.next && setStep(refs.current.next)),
+            handlePrevious: () =>
+                defer(
+                    () =>
+                        refs.current.previous && setStep(refs.current.previous),
+                ),
+            handleGoto: (run) => defer(() => setStep(run)),
             [internalState]: {
                 form,
                 step,

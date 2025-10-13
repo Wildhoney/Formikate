@@ -89,14 +89,14 @@ export function Field<T>(
         hidden?: boolean;
         default?: T;
         children: React.ReactNode;
-    }
+    },
 ): null | ReactElement;
 
 export function Field(
     props: VirtualField & {
         hidden?: boolean;
         children: React.ReactNode;
-    }
+    },
 ): null | ReactElement;
 
 export function Field<T = unknown>({
