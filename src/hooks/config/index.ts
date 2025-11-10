@@ -47,6 +47,18 @@ export function useConfig<Values extends FormikValues>({
                 if (!field) return false;
                 return field.step == null ? true : field.step === step;
             },
+            isOptional: (name: string) => {
+                const field = fields.find((field) => field.name === name);
+                return field
+                    ? field.validate.safeParse(undefined).success
+                    : true;
+            },
+            isRequired: (name: string) => {
+                const field = fields.find((field) => field.name === name);
+                return field
+                    ? !field.validate.safeParse(undefined).success
+                    : false;
+            },
             [internalState]: {
                 form,
                 step,

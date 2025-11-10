@@ -27,6 +27,8 @@ export type FormikateReturn<Values extends FormikValues> = ReturnType<
     handleNext(): void;
     handleGoto(step: Step): void;
     isVisible(name: string): boolean;
+    isOptional(name: string): boolean;
+    isRequired(name: string): boolean;
     [internalState]: {
         form: ReturnType<typeof useFormik<Values>>;
         step: null | Step;

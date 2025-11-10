@@ -6,10 +6,9 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.3.10](https://github.com/Wildhoney/Schematik/compare/v0.3.8...v0.3.10) (2025-11-10)
 
-
 ### Features
 
-* added isVisible function for determining field visibility ([deb73fb](https://github.com/Wildhoney/Schematik/commit/deb73fb25a8f44d5d677dcab4a0ea1d7c4a29422))
+- added isVisible function for determining field visibility ([deb73fb](https://github.com/Wildhoney/Schematik/commit/deb73fb25a8f44d5d677dcab4a0ea1d7c4a29422))
 
 ## [0.3.9](https://github.com/Wildhoney/Schematik/compare/v0.3.8...v0.3.9) (2025-10-13)
 
