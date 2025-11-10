@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { FormikValues } from 'formik';
 
 import { internalState } from '../../context/index.js';
@@ -21,8 +21,11 @@ export function useConfig<Values extends FormikValues>({
     const progress = useProgress({ fields, stepSequence });
 
     const refs = useRef({ next, previous });
-    refs.current.next = next;
-    refs.current.previous = previous;
+
+    useLayoutEffect(() => {
+        refs.current.next = next;
+        refs.current.previous = previous;
+    }, [next, previous]);
 
     return useMemo(
         () => ({

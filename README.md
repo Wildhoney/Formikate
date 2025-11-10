@@ -1,6 +1,10 @@
 # <img src="media/icon.png" alt="Formikate" width="32" height="32" /> Formikate
 
+[![Checks](https://github.com/Wildhoney/Formikate/actions/workflows/checks.yml/badge.svg)](https://github.com/Wildhoney/Formikate/actions/workflows/checks.yml)
+
 🪚 Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
+
+**[View Live Demo](https://wildhoney.github.io/Formikate/)**
 
 ## Features
 
