@@ -3,7 +3,7 @@ import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { faker } from '@faker-js/faker';
 import * as z from 'zod';
 import * as React from 'react';
-import { useForm, Form, Field } from '../index.js';
+import { useForm, Form, Field } from './index.js';
 
 afterEach(() => {
     cleanup();
@@ -1039,6 +1039,166 @@ describe('Field Component', () => {
                     Steps.Extra,
                 );
             });
+        });
+    });
+
+    describe('isVisible() method', () => {
+        it('should return false for non-existent fields', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <div data-testid="visible-result">
+                            {String(form.isVisible('nonexistent'))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('visible-result').textContent).toBe(
+                'false',
+            );
+        });
+
+        it('should return true for fields without steps', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="name" validate={z.string()}>
+                            <input data-testid="name-input" />
+                        </Field>
+                        <div data-testid="visible-result">
+                            {String(form.isVisible('name'))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('visible-result').textContent).toBe(
+                'true',
+            );
+        });
+
+        it('should return true for fields on the current step', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '', email: '' },
+                    initialStep: 1,
+                    stepSequence: [1, 2],
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="name" step={1} validate={z.string()}>
+                            <input data-testid="name-input" />
+                        </Field>
+                        <Field name="email" step={2} validate={z.string()}>
+                            <input data-testid="email-input" />
+                        </Field>
+                        <div data-testid="name-visible">
+                            {String(form.isVisible('name'))}
+                        </div>
+                        <div data-testid="email-visible">
+                            {String(form.isVisible('email'))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('name-visible').textContent).toBe('true');
+            expect(screen.getByTestId('email-visible').textContent).toBe(
+                'false',
+            );
+        });
+
+        it('should update when step changes', async () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '', email: '' },
+                    initialStep: 1,
+                    stepSequence: [1, 2],
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="name" step={1} validate={z.string()}>
+                            <input data-testid="name-input" />
+                        </Field>
+                        <Field name="email" step={2} validate={z.string()}>
+                            <input data-testid="email-input" />
+                        </Field>
+                        <button
+                            data-testid="next-button"
+                            onClick={() => form.handleNext()}
+                        >
+                            Next
+                        </button>
+                        <div data-testid="name-visible">
+                            {String(form.isVisible('name'))}
+                        </div>
+                        <div data-testid="email-visible">
+                            {String(form.isVisible('email'))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            expect(screen.getByTestId('name-visible').textContent).toBe('true');
+            expect(screen.getByTestId('email-visible').textContent).toBe(
+                'false',
+            );
+
+            screen.getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(screen.getByTestId('name-visible').textContent).toBe(
+                    'false',
+                );
+                expect(screen.getByTestId('email-visible').textContent).toBe(
+                    'true',
+                );
+            });
+        });
+
+        it('should respect hidden prop (field registered but not visible)', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="name" validate={z.string()} hidden={true}>
+                            <input data-testid="name-input" />
+                        </Field>
+                        <div data-testid="visible-result">
+                            {String(form.isVisible('name'))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('visible-result').textContent).toBe(
+                'true',
+            );
         });
     });
 });

@@ -27,8 +27,6 @@ export function useConfig<Values extends FormikValues>({
     return useMemo(
         () => ({
             ...form,
-            isNext: next != null,
-            isPrevious: previous != null,
             step,
             progress: [...progress].map((x) => ({
                 step: x as Step | null,
@@ -42,6 +40,13 @@ export function useConfig<Values extends FormikValues>({
                         refs.current.previous && setStep(refs.current.previous),
                 ),
             handleGoto: (run) => defer(() => setStep(run)),
+            isNext: next != null,
+            isPrevious: previous != null,
+            isVisible: (name: string) => {
+                const field = fields.find((field) => field.name === name);
+                if (!field) return false;
+                return field.step == null ? true : field.step === step;
+            },
             [internalState]: {
                 form,
                 step,
