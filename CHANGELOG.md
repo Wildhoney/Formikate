@@ -4,11 +4,10 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.3.12](https://github.com/Wildhoney/Schematik/compare/v0.3.11...v0.3.12) (2025-11-10)
 
-
 ### Features
 
-* setup deployment of the example ([e0f7b9b](https://github.com/Wildhoney/Schematik/commit/e0f7b9babc83f357a904d95af6fa0e8af6beaa1a))
-* updated design for the example and added isOptional + isRequired ([373cafd](https://github.com/Wildhoney/Schematik/commit/373cafd344a42ee1adc2002f06aa9e0051f8f29d))
+- setup deployment of the example ([e0f7b9b](https://github.com/Wildhoney/Schematik/commit/e0f7b9babc83f357a904d95af6fa0e8af6beaa1a))
+- updated design for the example and added isOptional + isRequired ([373cafd](https://github.com/Wildhoney/Schematik/commit/373cafd344a42ee1adc2002f06aa9e0051f8f29d))
 
 ## [0.3.11](https://github.com/Wildhoney/Schematik/compare/v0.3.10...v0.3.11) (2025-11-10)
 

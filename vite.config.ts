@@ -18,11 +18,18 @@ export default defineConfig({
             fileName: 'formikate',
         },
         rollupOptions: {
-            external: ['react', 'react-dom', 'formik', 'zod'],
+            external: [
+                'react',
+                'react-dom',
+                'react/jsx-runtime',
+                'formik',
+                'zod',
+            ],
             output: {
                 globals: {
                     react: 'React',
                     'react-dom': 'ReactDOM',
+                    'react/jsx-runtime': 'jsxRuntime',
                     formik: 'Formik',
                 },
             },
