@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useRef, useState, type ReactElement } from 'react';
 import type {
     Field,
     FieldProps,
@@ -12,10 +12,16 @@ import type {
     VirtualField,
 } from './types.js';
 import { FormikContext, useFormik, type FormikValues } from 'formik';
-import { Context, internalState } from './context/index.js';
+import {
+    Context,
+    internalState,
+    useVirtualHidden,
+    VirtualHiddenContext,
+} from './context/index.js';
 import { useField } from './hooks/field/index.js';
 import { useLifecycle } from './hooks/lifecycle/index.js';
 import { useMutate } from './hooks/mutate/index.js';
+import { useVirtual } from './hooks/virtual/index.js';
 import { useReset } from './hooks/reset/index.js';
 
 import { useSteps } from './hooks/steps/index.js';
@@ -72,15 +78,19 @@ export function Form<Values extends FormikValues>({
     controller,
     children,
 }: FormProps<Values>) {
+    const hiddenFieldsRef = useRef<Set<string>>(new Set());
+
     return (
-        <Context.Provider
-            value={controller as unknown as FormikateReturn<FormikValues>}
-        >
-            <FormikContext value={controller[internalState].form}>
-                {children}
-                <Expose />
-            </FormikContext>
-        </Context.Provider>
+        <VirtualHiddenContext value={hiddenFieldsRef}>
+            <Context.Provider
+                value={controller as unknown as FormikateReturn<FormikValues>}
+            >
+                <FormikContext value={controller[internalState].form}>
+                    {children}
+                    <Expose />
+                </FormikContext>
+            </Context.Provider>
+        </VirtualHiddenContext>
     );
 }
 
@@ -100,7 +110,7 @@ export function Field(
 ): null | ReactElement;
 
 export function Field<T = unknown>({
-    hidden = false,
+    hidden: hiddenProp = false,
     default: defaultValue,
     children,
     ...props
@@ -108,14 +118,19 @@ export function Field<T = unknown>({
     const context = useContext();
     const state = useMemo(() => context?.[internalState], [context]);
     const field = useField(props);
+    const hidden = useVirtualHidden();
+    const isVirtual = 'virtual' in props && props.virtual === true;
+    const isHidden =
+        hiddenProp ||
+        (state.step != null && field.step != null && state.step !== field.step);
 
-    useLifecycle({ ...field, default: defaultValue });
+    if (isVirtual && field.step != null && hidden.current && isHidden) {
+        hidden.current.add(String(field.step));
+    }
+
+    useVirtual({ isVirtual, isHidden, step: field.step, hidden });
     useMutate(field);
+    useLifecycle({ ...field, default: defaultValue, hidden });
 
-    return hidden ||
-        (state.step != null &&
-            field.step != null &&
-            state.step !== field.step) ? null : (
-        <>{children}</>
-    );
+    return isHidden ? null : <>{children}</>;
 }

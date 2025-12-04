@@ -10,6 +10,12 @@ export const container = css`
     font-family:
         -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
         Arial, sans-serif;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+        padding: 24px;
+        gap: 32px;
+    }
 `;
 
 export const sidebar = css`
@@ -19,6 +25,10 @@ export const sidebar = css`
     height: fit-content;
     position: sticky;
     top: 48px;
+
+    @media (max-width: 900px) {
+        position: static;
+    }
 `;
 
 export const heading = css`

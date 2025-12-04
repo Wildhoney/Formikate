@@ -41,31 +41,31 @@ export default function Details(): ReactElement {
                     <form onSubmit={form.handleSubmit}>
                         <Preview />
 
-                        <Field
-                            name="name"
-                            step={Steps.Name}
-                            validate={schema.shape.name}
-                        >
-                            <Name />
-                        </Field>
-
-                        <Field
-                            name="guest"
-                            step={Steps.Name}
-                            validate={schema.shape.guest}
-                        >
-                            <Guest />
-                        </Field>
-
-                        {form.values.guest === false && (
+                        <Field virtual step={Steps.Name}>
                             <Field
-                                name="age"
+                                name="name"
                                 step={Steps.Name}
-                                validate={schema.shape.age}
+                                validate={schema.shape.name}
                             >
-                                <Age />
+                                <Name />
                             </Field>
-                        )}
+                            <Field
+                                name="guest"
+                                step={Steps.Name}
+                                validate={schema.shape.guest}
+                            >
+                                <Guest />
+                            </Field>
+                            {form.values.guest === false && (
+                                <Field
+                                    name="age"
+                                    step={Steps.Name}
+                                    validate={schema.shape.age}
+                                >
+                                    <Age />
+                                </Field>
+                            )}
+                        </Field>
 
                         {form.values.guest === false && (
                             <Field

@@ -1,4 +1,4 @@
-.PHONY: build dev install lint test typecheck fmt clean
+.PHONY: build dev install lint test typecheck fmt clean integration
 
 checks:
 	make fmt
@@ -19,6 +19,9 @@ lint:
 
 unit:
 	npm run unit
+
+integration:
+	npm run integration
 
 typecheck:
 	npx tsc --noEmit
