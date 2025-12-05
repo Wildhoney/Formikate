@@ -25,3 +25,6 @@ dist-example
 *.sw?
 
 tsconfig.tsbuildinfo
+
+test-results/
+playwright-report/
