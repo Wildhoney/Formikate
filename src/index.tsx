@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { useMemo, useRef, useState, type ReactElement } from 'react';
+import * as React from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import type {
     Field,
     FieldProps,
@@ -14,14 +15,12 @@ import type {
 import { FormikContext, useFormik, type FormikValues } from 'formik';
 import {
     Context,
+    FieldNestingContext,
     internalState,
-    useVirtualHidden,
-    VirtualHiddenContext,
 } from './context/index.js';
 import { useField } from './hooks/field/index.js';
 import { useLifecycle } from './hooks/lifecycle/index.js';
 import { useMutate } from './hooks/mutate/index.js';
-import { useVirtual } from './hooks/virtual/index.js';
 import { useReset } from './hooks/reset/index.js';
 
 import { useSteps } from './hooks/steps/index.js';
@@ -78,19 +77,15 @@ export function Form<Values extends FormikValues>({
     controller,
     children,
 }: FormProps<Values>) {
-    const hiddenFieldsRef = useRef<Set<string>>(new Set());
-
     return (
-        <VirtualHiddenContext value={hiddenFieldsRef}>
-            <Context.Provider
-                value={controller as unknown as FormikateReturn<FormikValues>}
-            >
-                <FormikContext value={controller[internalState].form}>
-                    {children}
-                    <Expose />
-                </FormikContext>
-            </Context.Provider>
-        </VirtualHiddenContext>
+        <Context.Provider
+            value={controller as unknown as FormikateReturn<FormikValues>}
+        >
+            <FormikContext value={controller[internalState].form}>
+                {children}
+                <Expose />
+            </FormikContext>
+        </Context.Provider>
     );
 }
 
@@ -110,7 +105,7 @@ export function Field(
 ): null | ReactElement;
 
 export function Field<T = unknown>({
-    hidden: hiddenProp = false,
+    hidden = false,
     default: defaultValue,
     children,
     ...props
@@ -118,19 +113,21 @@ export function Field<T = unknown>({
     const context = useContext();
     const state = useMemo(() => context?.[internalState], [context]);
     const field = useField(props);
-    const hidden = useVirtualHidden();
-    const isVirtual = 'virtual' in props && props.virtual === true;
-    const isHidden =
-        hiddenProp ||
-        (state.step != null && field.step != null && state.step !== field.step);
+    const isNested = React.useContext(FieldNestingContext);
 
-    if (isVirtual && field.step != null && hidden.current && isHidden) {
-        hidden.current.add(String(field.step));
+    if (isNested) {
+        console.warn(
+            `[Formikate] Field "${field.name}" is nested inside another Field — this may cause unexpected behavior.`,
+        );
     }
 
-    useVirtual({ isVirtual, isHidden, step: field.step, hidden });
+    useLifecycle({ ...field, default: defaultValue });
     useMutate(field);
-    useLifecycle({ ...field, default: defaultValue, hidden });
 
-    return isHidden ? null : <>{children}</>;
+    return hidden ||
+        (state.step != null &&
+            field.step != null &&
+            state.step !== field.step) ? null : (
+        <FieldNestingContext value={true}>{children}</FieldNestingContext>
+    );
 }

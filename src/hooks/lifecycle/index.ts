@@ -11,11 +11,9 @@ export function useLifecycle<T>(field: LifecycleProps<T>) {
     const state = React.useMemo(() => context[internalState], [context]);
 
     React.useLayoutEffect(() => {
-        const wasHidden =
-            field.step != null && field.hidden.current?.has(String(field.step));
-
-        if (field.default !== undefined && !wasHidden)
+        if (field.default !== undefined) {
             form.setFieldValue(field.name, field.default);
+        }
 
         state.setFields((fields: Fields) => [
             ...fields.filter((f: Field) => f.name !== field.name),
@@ -23,21 +21,11 @@ export function useLifecycle<T>(field: LifecycleProps<T>) {
         ]);
 
         return () => {
-            // Check if this field's step is in the hidden steps set
-            // This means a parent virtual field is hiding, so don't deregister
-            const hidden =
-                field.step != null &&
-                field.hidden.current?.has(String(field.step));
-
-            if (hidden) {
-                return;
-            }
-
-            const rollback =
+            const resetValue =
                 field.default !== undefined
                     ? field.default
                     : getIn(form.initialValues, field.name);
-            form.setFieldValue(field.name, rollback);
+            form.setFieldValue(field.name, resetValue);
             state.setFields((fields: Fields) =>
                 fields.filter((f: Field) => f.name !== field.name),
             );

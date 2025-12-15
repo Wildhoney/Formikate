@@ -4,10 +4,9 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.3.14](https://github.com/Wildhoney/Schematik/compare/v0.3.13...v0.3.14) (2025-12-04)
 
-
 ### Features
 
-* determining if a field is being hidden from a virtual parent ([8b498d8](https://github.com/Wildhoney/Schematik/commit/8b498d8572c3e35a9e21bd52a8c9009f912a820c))
+- determining if a field is being hidden from a virtual parent ([8b498d8](https://github.com/Wildhoney/Schematik/commit/8b498d8572c3e35a9e21bd52a8c9009f912a820c))
 
 ## [0.3.13](https://github.com/Wildhoney/Schematik/compare/v0.3.12...v0.3.13) (2025-11-11)
 

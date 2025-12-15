@@ -41,31 +41,31 @@ export default function Details(): ReactElement {
                     <form onSubmit={form.handleSubmit}>
                         <Preview />
 
-                        <Field virtual step={Steps.Name}>
-                            <Field
-                                name="name"
-                                step={Steps.Name}
-                                validate={schema.shape.name}
-                            >
-                                <Name />
-                            </Field>
-                            <Field
-                                name="guest"
-                                step={Steps.Name}
-                                validate={schema.shape.guest}
-                            >
-                                <Guest />
-                            </Field>
-                            {form.values.guest === false && (
-                                <Field
-                                    name="age"
-                                    step={Steps.Name}
-                                    validate={schema.shape.age}
-                                >
-                                    <Age />
-                                </Field>
-                            )}
+                        <Field
+                            name="name"
+                            step={Steps.Name}
+                            validate={schema.shape.name}
+                        >
+                            <Name />
                         </Field>
+
+                        <Field
+                            name="guest"
+                            step={Steps.Name}
+                            validate={schema.shape.guest}
+                        >
+                            <Guest />
+                        </Field>
+
+                        {form.values.guest === false && (
+                            <Field
+                                name="age"
+                                step={Steps.Name}
+                                validate={schema.shape.age}
+                            >
+                                <Age />
+                            </Field>
+                        )}
 
                         {form.values.guest === false && (
                             <Field

@@ -6,9 +6,7 @@ import type { FormikateReturn } from '~/types.js';
 export const Context =
     React.createContext<null | FormikateReturn<FormikValues>>(null);
 
-export const VirtualHiddenContext = React.createContext<
-    React.RefObject<Set<string> | null>
->({ current: null });
+export const FieldNestingContext = React.createContext<boolean>(false);
 
 export const internalState = Symbol('formikate.internalState');
 
@@ -18,8 +16,4 @@ export function useContext(): FormikateReturn<FormikValues> {
         throw new Error('useContext must be used within a Formikate Form');
     }
     return context;
-}
-
-export function useVirtualHidden(): React.RefObject<Set<string> | null> {
-    return React.useContext(VirtualHiddenContext);
 }

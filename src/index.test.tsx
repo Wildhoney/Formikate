@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { faker } from '@faker-js/faker';
 import * as z from 'zod';
@@ -1039,6 +1039,69 @@ describe('Field Component', () => {
                     Steps.Extra,
                 );
             });
+        });
+    });
+
+    describe('nested field warning', () => {
+        it('should warn when Field components are nested', () => {
+            const warnSpy = vi
+                .spyOn(console, 'warn')
+                .mockImplementation(() => {});
+
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { parent: '', child: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="parent" validate={z.string()}>
+                            <Field name="child" validate={z.string()}>
+                                <input data-testid="child-input" />
+                            </Field>
+                        </Field>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            expect(warnSpy).toHaveBeenCalledWith(
+                '[Formikate] Field "child" is nested inside another Field — this may cause unexpected behavior.',
+            );
+
+            warnSpy.mockRestore();
+        });
+
+        it('should not warn when Field components are not nested', () => {
+            const warnSpy = vi
+                .spyOn(console, 'warn')
+                .mockImplementation(() => {});
+
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { field1: '', field2: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="field1" validate={z.string()}>
+                            <input data-testid="field1-input" />
+                        </Field>
+                        <Field name="field2" validate={z.string()}>
+                            <input data-testid="field2-input" />
+                        </Field>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            expect(warnSpy).not.toHaveBeenCalled();
+
+            warnSpy.mockRestore();
         });
     });
 
