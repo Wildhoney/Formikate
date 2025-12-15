@@ -1,8 +1,8 @@
-import type { Fields, Step } from '~/types.js';
+import type { Fields, StepName } from '~/types.js';
 
 export type SchemaProps = {
     fields: Fields;
-    step: Step | null;
-    stepSequence: Step[];
+    step: StepName | null;
+    stepSequence: StepName[];
     current: number | null;
 };

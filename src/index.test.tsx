@@ -1264,4 +1264,120 @@ describe('Field Component', () => {
             );
         });
     });
+
+    describe('isStep() method', () => {
+        it('should return true when step matches current step', () => {
+            const Steps = { Personal: 'personal', Delivery: 'delivery' };
+
+            function TestForm() {
+                const form = useForm({
+                    initialStep: Steps.Personal,
+                    stepSequence: [Steps.Personal, Steps.Delivery],
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <div data-testid="is-personal">
+                            {String(form.isStep(Steps.Personal))}
+                        </div>
+                        <div data-testid="is-delivery">
+                            {String(form.isStep(Steps.Delivery))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('is-personal').textContent).toBe('true');
+            expect(screen.getByTestId('is-delivery').textContent).toBe('false');
+        });
+
+        it('should update when step changes', async () => {
+            const Steps = { Personal: 'personal', Delivery: 'delivery' };
+
+            function TestForm() {
+                const form = useForm({
+                    initialStep: Steps.Personal,
+                    stepSequence: [Steps.Personal, Steps.Delivery],
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field
+                            name="name"
+                            step={Steps.Personal}
+                            validate={z.string()}
+                        >
+                            <input data-testid="name-input" />
+                        </Field>
+                        <Field
+                            name="address"
+                            step={Steps.Delivery}
+                            validate={z.string()}
+                        >
+                            <input data-testid="address-input" />
+                        </Field>
+                        <button
+                            data-testid="next-button"
+                            onClick={() => form.handleNext()}
+                        >
+                            Next
+                        </button>
+                        <div data-testid="is-personal">
+                            {String(form.isStep(Steps.Personal))}
+                        </div>
+                        <div data-testid="is-delivery">
+                            {String(form.isStep(Steps.Delivery))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            expect(screen.getByTestId('is-personal').textContent).toBe('true');
+            expect(screen.getByTestId('is-delivery').textContent).toBe('false');
+
+            screen.getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(screen.getByTestId('is-personal').textContent).toBe(
+                    'false',
+                );
+                expect(screen.getByTestId('is-delivery').textContent).toBe(
+                    'true',
+                );
+            });
+        });
+
+        it('should work with numeric steps', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialStep: 1,
+                    stepSequence: [1, 2, 3],
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <div data-testid="is-step-1">
+                            {String(form.isStep(1))}
+                        </div>
+                        <div data-testid="is-step-2">
+                            {String(form.isStep(2))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('is-step-1').textContent).toBe('true');
+            expect(screen.getByTestId('is-step-2').textContent).toBe('false');
+        });
+    });
 });

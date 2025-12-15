@@ -5,7 +5,7 @@ import { internalState } from '../../context/index.js';
 import { useProgress } from '../progress/index.js';
 import { defer } from './utils.js';
 import type { ConfigProps } from './types.js';
-import type { FormikateReturn, Step } from '~/types.js';
+import type { FieldName, FormikateReturn, StepName } from '~/types.js';
 
 export function useConfig<Values extends FormikValues>({
     current,
@@ -32,31 +32,38 @@ export function useConfig<Values extends FormikValues>({
             ...form,
             step,
             progress: [...progress].map((x) => ({
-                step: x as Step | null,
+                step: x as StepName | null,
                 current: x === step,
             })),
-            handleNext: () =>
-                defer(() => refs.current.next && setStep(refs.current.next)),
-            handlePrevious: () =>
+            handleNext() {
+                defer(() => refs.current.next && setStep(refs.current.next));
+            },
+            handlePrevious() {
                 defer(
                     () =>
                         refs.current.previous && setStep(refs.current.previous),
-                ),
-            handleGoto: (run) => defer(() => setStep(run)),
+                );
+            },
+            handleGoto(run) {
+                defer(() => setStep(run));
+            },
             isNext: next != null,
             isPrevious: previous != null,
-            isVisible: (name: string) => {
+            isVisible(name: FieldName) {
                 const field = fields.find((field) => field.name === name);
                 if (!field) return false;
                 return field.step == null ? true : field.step === step;
             },
-            isOptional: (name: string) => {
+            isStep(name: StepName) {
+                return name === step;
+            },
+            isOptional(name: FieldName) {
                 const field = fields.find((field) => field.name === name);
                 return field
                     ? field.validate.safeParse(undefined).success
                     : true;
             },
-            isRequired: (name: string) => {
+            isRequired(name: FieldName) {
                 const field = fields.find((field) => field.name === name);
                 return field
                     ? !field.validate.safeParse(undefined).success

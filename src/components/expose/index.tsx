@@ -1,6 +1,6 @@
 import { useFormikContext } from 'formik';
 import * as React from 'react';
-import type { Field, Step } from '~/types.js';
+import type { Field, StepName } from '~/types.js';
 
 import { internalState, useContext } from '../../context/index.js';
 
@@ -20,7 +20,7 @@ export function Expose(): null {
         const errorIndices = Object.keys(form.errors).map((key: string) => {
             const field = state.fields.find((f: Field) => f.name === key);
             return state.stepSequence.findIndex(
-                (step: Step) => field?.step === step,
+                (step: StepName) => field?.step === step,
             );
         });
 

@@ -1,6 +1,6 @@
-import type { Fields, Step } from '~/types.js';
+import type { Fields, StepName } from '~/types.js';
 
 export type ProgressProps = {
     fields: Fields;
-    stepSequence: Step[];
+    stepSequence: StepName[];
 };

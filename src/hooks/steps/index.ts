@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { type FormikValues } from 'formik';
-import type { Field, Step } from '~/types.js';
+import type { Field, StepName } from '~/types.js';
 
 import type { StepsProps } from './types.js';
 
@@ -18,11 +18,13 @@ export function useSteps<Values extends FormikValues>({
             };
         }
 
-        const current = stepSequence.findIndex((x: Step) => x === step);
+        const current = stepSequence.findIndex((x: StepName) => x === step);
 
         const indices = fields
             .map((field: Field) =>
-                stepSequence.findIndex((step: Step) => step === field.step),
+                stepSequence.findIndex(
+                    (step: StepName) => step === field.step,
+                ),
             )
             .filter((index: number) => index !== -1);
 

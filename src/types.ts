@@ -3,38 +3,40 @@ import * as z from 'zod';
 import type { internalState } from './context/index.js';
 import type { ReactNode } from 'react';
 
-export type Step = string | number;
+export type StepName = string | number;
+export type FieldName = string;
 
 export type FormikateProps<Values extends FormikValues> = Omit<
     FormikConfig<Values>,
     'validate' | 'validationSchema'
 > & {
-    initialStep?: null | Step;
-    stepSequence?: Step[];
+    initialStep?: null | StepName;
+    stepSequence?: StepName[];
 };
 
 export type FormikateReturn<Values extends FormikValues> = ReturnType<
     typeof useFormik<Values>
 > & {
-    step: Step | null;
+    step: StepName | null;
     progress: {
-        step: null | Step;
+        step: null | StepName;
         current: boolean;
     }[];
     isNext: boolean;
     isPrevious: boolean;
     handlePrevious(): void;
     handleNext(): void;
-    handleGoto(step: Step): void;
-    isVisible(name: string): boolean;
-    isOptional(name: string): boolean;
-    isRequired(name: string): boolean;
+    handleGoto(step: StepName): void;
+    isVisible(name: FieldName): boolean;
+    isStep(name: StepName): boolean;
+    isOptional(name: FieldName): boolean;
+    isRequired(name: FieldName): boolean;
     [internalState]: {
         form: ReturnType<typeof useFormik<Values>>;
-        step: null | Step;
+        step: null | StepName;
         fields: Fields;
-        stepSequence: Step[];
-        setStep: React.Dispatch<React.SetStateAction<Step | null>>;
+        stepSequence: StepName[];
+        setStep: React.Dispatch<React.SetStateAction<StepName | null>>;
         setFields: React.Dispatch<React.SetStateAction<Fields>>;
         currentStepIndex: null | number;
     };
@@ -42,7 +44,7 @@ export type FormikateReturn<Values extends FormikValues> = ReturnType<
 
 export type Field<T = unknown> = {
     name: string;
-    step?: null | Step;
+    step?: null | StepName;
     validate: z.ZodType<T>;
 };
 

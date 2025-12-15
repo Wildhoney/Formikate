@@ -9,9 +9,11 @@ import type {
     FormikateProps,
     FormikateReturn,
     FormProps,
-    Step,
+    StepName,
     VirtualField,
 } from './types.js';
+
+export type { StepName, FieldName } from './types.js';
 import { FormikContext, useFormik, type FormikValues } from 'formik';
 import {
     Context,
@@ -40,7 +42,7 @@ export function useForm<Values extends FormikValues>({
     stepSequence = [],
     ...props
 }: FormikateProps<Values>): FormikateReturn<Values> {
-    const [step, setStep] = useState<null | Step>(initialStep);
+    const [step, setStep] = useState<null | StepName>(initialStep);
     const [fields, setFields] = useState<Fields>([]);
 
     const { current, next, previous } = useSteps<Values>({

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Field, Step } from '~/types.js';
+import type { Field, StepName } from '~/types.js';
 import type { ProgressProps } from './types.js';
 
 export function useProgress({ fields, stepSequence }: ProgressProps) {
@@ -8,9 +8,9 @@ export function useProgress({ fields, stepSequence }: ProgressProps) {
             new Set(
                 fields
                     .map((field: Field) => field.step)
-                    .filter((step): step is Step => step != null)
+                    .filter((step): step is StepName => step != null)
                     .sort(
-                        (a: Step, b: Step) =>
+                        (a: StepName, b: StepName) =>
                             stepSequence.indexOf(a) - stepSequence.indexOf(b),
                     ),
             ),
