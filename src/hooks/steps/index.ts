@@ -1,16 +1,11 @@
 import * as React from 'react';
-import { type FormikValues } from 'formik';
-import type { Field, StepName } from '~/types.js';
+import type { StepRegistration } from '~/types.js';
 
 import type { StepsProps } from './types.js';
 
-export function useSteps<Values extends FormikValues>({
-    step,
-    stepSequence,
-    fields,
-}: StepsProps<Values>) {
+export function useSteps({ step, steps }: StepsProps) {
     return React.useMemo(() => {
-        if (!stepSequence) {
+        if (steps.length === 0) {
             return {
                 current: null,
                 previous: null,
@@ -18,29 +13,16 @@ export function useSteps<Values extends FormikValues>({
             };
         }
 
-        const current = stepSequence.findIndex((x: StepName) => x === step);
+        const navigableSteps = steps.filter((s: StepRegistration) => s.fieldCount > 0);
+        const currentIndex = navigableSteps.findIndex((s: StepRegistration) => s.order === step);
 
-        const indices = fields
-            .map((field: Field) =>
-                stepSequence.findIndex(
-                    (step: StepName) => step === field.step,
-                ),
-            )
-            .filter((index: number) => index !== -1);
-
-        const previousIndex = Math.max(
-            ...indices.filter((index: number) => index < current),
-            -1,
-        );
-        const nextIndex = Math.min(
-            ...indices.filter((index: number) => index > current),
-            Infinity,
-        );
+        const previousStep = currentIndex > 0 ? navigableSteps[currentIndex - 1] : null;
+        const nextStep = currentIndex < navigableSteps.length - 1 ? navigableSteps[currentIndex + 1] : null;
 
         return {
-            current,
-            previous: previousIndex === -1 ? null : stepSequence[previousIndex],
-            next: nextIndex === Infinity ? null : stepSequence[nextIndex],
+            current: currentIndex,
+            previous: previousStep?.order ?? null,
+            next: nextStep?.order ?? null,
         };
-    }, [step, stepSequence, fields]);
+    }, [step, steps]);
 }

@@ -2,26 +2,27 @@
 
 [![Checks](https://github.com/Wildhoney/Formikate/actions/workflows/checks.yml/badge.svg)](https://github.com/Wildhoney/Formikate/actions/workflows/checks.yml)
 
-🪚 Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
+Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
 
 **[View Live Demo](https://wildhoney.github.io/Formikate/)**
 
 ## Features
 
 - Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod)
-- Supports multi-step forms using the `step` property
+- Declarative multi-step forms using the `<Step>` component
 - Fields that get hidden are reset using the `initialValues` object
+- Steps without fields are automatically skipped during navigation
 - Navigates to the earliest step that contains a validation error on submit
 
 ## Getting started
 
-Begin by defining both your validation schema and, optionally, the steps in your form:
+Begin by defining your validation schema and step order:
 
 ```tsx
 export const enum Steps {
-    Personal,
-    Delivery,
-    Review,
+    Personal = 1,
+    Delivery = 2,
+    Review = 3,
 }
 
 export const schema = z.object({
@@ -31,17 +32,10 @@ export const schema = z.object({
 });
 ```
 
-Next import the `useForm` hook &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik) with the addition of two more:
-
-- `initialStep`: Step to initially start on when rendering the form.
-- `stepSequence`: Logical sequence of the steps.
-
-Note that if you change `stepSequence` after rendering the form and you have multiple steps, it will reset the form back to the `initialStep` or the first step in the sequence. Also note that `stepSequence` has zero effect on which steps are visible &ndash; that is determined by the `Field` components later on.
+Next import the `useForm` hook &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik):
 
 ```tsx
 const form = useForm({
-    initialStep: Steps.Personal,
-    stepSequence: [Steps.Personal, Steps.Delivery, Steps.Review],
     validateOnBlur: false,
     validateOnChange: false,
     initialValues: { name: '', address: '', guest: false },
@@ -53,113 +47,172 @@ const form = useForm({
 
 You can now use `form` to access [all of the usual](https://formik.org/docs/api/formik#props-1) Formik properties such as `form.values` and `form.errors`.
 
-Next we can begin rendering our `Form` and `Field` components, conditionally or otherwise, and the rendering of these components determines which fields are applicable to your form based on the current state. Simply pass in the `form` to the `controller` parameter of `Form`:
+## Step Component
+
+Multi-step forms are created using the `<Step>` component. Each step defines its order in the sequence and which fields belong to it:
 
 ```tsx
 <Form controller={form}>
     <form onSubmit={form.handleSubmit}>
-        <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
-            <input type="text" {...form.getFieldProps('name')} />
-        </Field>
-
-        <Field
-            name="address"
-            step={Steps.Delivery}
-            validate={schema.shape.address}
-        >
-            <input type="address" {...form.getFieldProps('address')} />
-        </Field>
-    </form>
-</Form>
-```
-
-In the above case the form will be rendered as two steps, within the submit handler you can check which step has been submitted, assuming there are no validation errors, and determine whether to submit the form to the backend or move to the next step using `form.handleNext()`, for example you might do:
-
-```tsx
-onSubmit(values: Schema) {
-    if (form.step === Steps.Review) console.log('Submitting', values);
-    else form.handleNext();
-}
-```
-
-However you may have noticed we have a `guest` parameter as well, using that we can conditionally show the `address` field &ndash; if a user is a guest we need to ask for the address, otherwise we'll know their address from their user profile. When we conditionally render `address` the validation schema and values will be kept in sync.
-
-```tsx
-<Form controller={form}>
-    <form onSubmit={form.handleSubmit}>
-        <Field name="guest" step={Steps.Personal} validate={schema.shape.guest}>
-            <input type="checkbox" {...form.getFieldProps('guest')} />
-        </Field>
-
-        <Field name="name" step={Steps.Personal} validate={schema.shape.name}>
-            <input type="text" {...form.getFieldProps('name')} />
-        </Field>
-
-        {form.values.guest && (
-            <Field
-                name="address"
-                step={Steps.Delivery}
-                validate={schema.shape.address}
-            >
-                <input type="address" {...form.getFieldProps('address')} />
+        <Step initial order={Steps.Personal}>
+            <Field name="name" validate={schema.shape.name}>
+                <input type="text" {...form.getFieldProps('name')} />
             </Field>
-        )}
+        </Step>
+
+        <Step order={Steps.Delivery}>
+            <Field name="address" validate={schema.shape.address}>
+                <input type="text" {...form.getFieldProps('address')} />
+            </Field>
+        </Step>
     </form>
 </Form>
 ```
 
-Note that if you want to just hide the `Field` and retain its value then you can use the `hidden` property. You can also provide a type-safe `default` prop to set a field's initial value on mount &ndash; when the field unmounts, it will reset to either the `default` value or the `initialValue` from the form.
+### Step Props
 
-Field visibility is handled automatically by the `<Field>` component based on steps. If you need to check field visibility for any other reason, you can use `form.isVisible(name)`. You can also use `form.isRequired(name)` (or `form.isOptional(name)`) to check if a field is required/optional based on your Zod schema, which is useful for conditionally showing required field indicators. To check if the current step matches a specific step, use `form.isStep(step)` which returns `true` when the given step is the active step.
+| Prop | Type | Description |
+|------|------|-------------|
+| `order` | `number` | The step's position in the sequence (lower numbers come first) |
+| `initial` | `boolean` | Whether this is the starting step (default: `false`) |
 
-When the user selects they are a guest, our form becomes a two step form, otherwise it's a one step form. However you'll also notice we have a review step which we also need to incorporate to make our form either a two or three step form:
+Steps are automatically sorted by their `order` value. You can use any numeric values including negative numbers or `Infinity`.
+
+### Automatic Step Skipping
+
+Steps that contain no `<Field>` children are automatically skipped during navigation. This allows for dynamic multi-step forms:
 
 ```tsx
-<Field virtual step={Steps.Review}>
-    <ul>
-        <li>Guest: {form.values.guest ? 'Yes' : 'No'}</li>
-        <li>Name: {form.values.name}</li>
-        <li>Address: {form.values.address}</li>
-    </ul>
+<Step order={Steps.Delivery}>
+    {form.values.guest && (
+        <Field name="address" validate={schema.shape.address}>
+            <input type="text" {...form.getFieldProps('address')} />
+        </Field>
+    )}
+</Step>
+```
+
+When `guest` is `false`, the Delivery step has no fields and will be skipped when navigating.
+
+## Field Component
+
+The `<Field>` component registers form fields with Formikate:
+
+```tsx
+<Field name="name" validate={schema.shape.name}>
+    <input type="text" {...form.getFieldProps('name')} />
 </Field>
 ```
 
-By using the `virtual` property on the `Field` component we can instruct Formikate that there's no validation to be applied but it still shows up as a step in our form.
+### Field Props
 
-Last of all we need to add the buttons to our form for the user to navigate and submit:
+| Prop | Type | Description |
+|------|------|-------------|
+| `name` | `string` | The field name (must match a key in `initialValues`) |
+| `validate` | `ZodType` | Zod schema for validation |
+| `initial` | `any` | Initial value when field mounts (optional) |
+| `hidden` | `boolean` | Hide the field but retain its value (default: `false`) |
+| `virtual` | `boolean` | No validation, just marks a step as having content |
+
+### Virtual Fields
+
+Use `virtual` for steps that display data but don't collect input:
 
 ```tsx
-<>
-    <button
-        type="button"
-        disabled={!form.isPrevious}
-        onClick={form.handlePrevious}
-    >
-        Back
-    </button>
-
-    <button type="submit" disabled={form.isSubmitting}>
-        {form.step === Steps.Review ? 'Submit' : 'Next'}
-    </button>
-</>
+<Step order={Steps.Review}>
+    <Field virtual>
+        <ul>
+            <li>Name: {form.values.name}</li>
+            <li>Address: {form.values.address}</li>
+        </ul>
+    </Field>
+</Step>
 ```
 
-We can also display a nice list of the current form steps using the `form.progress` vector and for that we may also want to give our `Step` enum actual labels:
+## Navigation
+
+Control form navigation using the form controller:
 
 ```tsx
-export const enum Steps {
-    Personal = 'Personal',
-    Delivery = 'Delivery',
-    Review = 'Review',
+// In your onSubmit handler
+onSubmit(values: Schema) {
+    if (form.isStep(Steps.Review)) {
+        console.log('Submitting', values);
+    } else {
+        form.handleNext();
+    }
 }
+```
 
-// ...
+### Navigation Methods
 
+| Method | Description |
+|--------|-------------|
+| `form.handleNext()` | Navigate to the next step |
+| `form.handlePrevious()` | Navigate to the previous step |
+| `form.handleGoto(step)` | Navigate to a specific step |
+| `form.isStep(step)` | Check if the current step matches |
+
+### Navigation Buttons
+
+```tsx
+<button
+    type="button"
+    disabled={!form.isPrevious || form.isSubmitting}
+    onClick={form.handlePrevious}
+>
+    Back
+</button>
+
+<button type="submit" disabled={form.isSubmitting}>
+    {form.isStep(Steps.Review) ? 'Submit' : 'Next'}
+</button>
+```
+
+## Progress Indicator
+
+Display step progress using `form.progress`:
+
+```tsx
 <ul>
     {form.progress.map((progress) => (
         <li key={progress.step} className={progress.current ? 'active' : ''}>
-            {progress.step}
+            Step {progress.step}
         </li>
     ))}
-</ul>;
+</ul>
 ```
+
+## Empty State
+
+When all fields are conditionally hidden, use `form.isEmpty` to render a fallback:
+
+```tsx
+<Form controller={form}>
+    {form.isEmpty ? (
+        <p>No fields available</p>
+    ) : (
+        <form onSubmit={form.handleSubmit}>
+            {showFields && (
+                <Step initial order={1}>
+                    <Field name="name" validate={schema.shape.name}>
+                        <input type="text" {...form.getFieldProps('name')} />
+                    </Field>
+                </Step>
+            )}
+        </form>
+    )}
+</Form>
+```
+
+## Utility Methods
+
+| Method | Description |
+|--------|-------------|
+| `form.isEmpty` | Whether the form has no registered fields |
+| `form.isVisible(name)` | Check if a field is currently rendered |
+| `form.isRequired(name)` | Check if a field is required (based on Zod schema) |
+| `form.isOptional(name)` | Check if a field is optional |
+| `form.step` | Current step order value |
+| `form.isPrevious` | Whether a previous step exists |
+| `form.isNext` | Whether a next step exists |

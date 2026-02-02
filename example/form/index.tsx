@@ -1,9 +1,11 @@
 /** @jsxImportSource @emotion/react */
-import { Form, Field, useForm } from '../../src';
-import { ReactElement } from 'react';
+import { Form, Field, useForm, Step } from '../../src';
+import { ReactElement, useRef, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import { Carousel } from 'antd';
+import type { CarouselRef } from 'antd/es/carousel';
 
-import { config, schema, Steps } from './utils.js';
+import { config, schema, Steps, getIndex, carouselConfig } from './utils.js';
 import * as styles from './styles.js';
 
 import type { Schema } from './types.js';
@@ -17,11 +19,13 @@ import Review from './components/review/index.js';
 import Telephone from './components/telephone/index.js';
 
 export default function Details(): ReactElement {
+    const carousel = useRef<CarouselRef>(null);
+
     const form = useForm({
         ...config,
         async onSubmit(values: Schema) {
-            await new Promise((ƒ) => setTimeout(ƒ, 2_000));
-            if (form.step !== Steps.Review) {
+            await new Promise((f) => setTimeout(f, 2_000));
+            if (!form.isStep(Steps.Review)) {
                 form.handleNext();
             } else {
                 console.log('Submitting', values);
@@ -33,53 +37,80 @@ export default function Details(): ReactElement {
         },
     });
 
+    
+
+    useEffect(() => {
+        if (form.step !== null && carousel.current) {
+            const index = getIndex[form.step];
+            if (index !== undefined) {
+                carousel.current.goTo(index);
+            }
+        }
+    }, [form.step]);
+
     return (
         <Form controller={form}>
             <Toaster toastOptions={styles.toast} />
+            
             <div css={styles.container}>
-                <div>
+                <div css={styles.formSection}>
                     <form onSubmit={form.handleSubmit}>
                         <Preview />
 
-                        <Field
-                            name="name"
-                            step={Steps.Name}
-                            validate={schema.shape.name}
+                        <Carousel
+                            ref={carousel}
+                            {...carouselConfig}
+                            css={styles.carousel}
                         >
-                            <Name />
-                        </Field>
+                            <div>
+                                <Step initial order={Steps.Name}>
+                                    <Field
+                                        name="name"
+                                        initial=""
+                                        validate={schema.shape.name}
+                                    >
+                                        <Name />
+                                    </Field>
 
-                        <Field
-                            name="guest"
-                            step={Steps.Name}
-                            validate={schema.shape.guest}
-                        >
-                            <Guest />
-                        </Field>
+                                    <Field
+                                        name="guest"
+                                        validate={schema.shape.guest}
+                                    >
+                                        <Guest />
+                                    </Field>
 
-                        {form.values.guest === false && (
-                            <Field
-                                name="age"
-                                step={Steps.Name}
-                                validate={schema.shape.age}
-                            >
-                                <Age />
-                            </Field>
-                        )}
+                                    {form.values.guest === false && (
+                                        <Field
+                                            name="age"
+                                            validate={schema.shape.age}
+                                        >
+                                            <Age />
+                                        </Field>
+                                    )}
+                                </Step>
+                            </div>
 
-                        {form.values.guest === false && (
-                            <Field
-                                name="telephone"
-                                step={Steps.Address}
-                                validate={schema.shape.telephone}
-                            >
-                                <Telephone />
-                            </Field>
-                        )}
+                            <div>
+                                <Step order={Steps.Address}>
+                                    {form.values.guest === false && (
+                                        <Field
+                                            name="telephone"
+                                            validate={schema.shape.telephone}
+                                        >
+                                            <Telephone />
+                                        </Field>
+                                    )}
+                                </Step>
+                            </div>
 
-                        <Field virtual step={Steps.Review}>
-                            <Review />
-                        </Field>
+                            <div>
+                                <Step order={Steps.Review}>
+                                    <Field virtual>
+                                        <Review />
+                                    </Field>
+                                </Step>
+                            </div>
+                        </Carousel>
 
                         <Buttons />
                     </form>

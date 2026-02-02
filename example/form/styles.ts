@@ -77,3 +77,28 @@ export const toast = {
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     },
 };
+
+export const formSection = css`
+    max-width: 500px;
+`;
+
+export const carousel = css`
+    margin: 24px 0;
+    min-height: 200px;
+    overflow: hidden;
+
+    .slick-slide {
+        > div {
+            padding: 4px;
+        }
+    }
+
+    .slick-track {
+        display: flex;
+        transition: transform 0.4s ease-in-out;
+    }
+
+    .slick-list {
+        overflow: hidden;
+    }
+`;

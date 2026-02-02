@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import * as React from 'react';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState, type ReactElement } from 'react';
 import type {
     Field,
     FieldProps,
@@ -10,26 +10,28 @@ import type {
     FormikateReturn,
     FormProps,
     StepName,
+    StepRegistration,
     VirtualField,
 } from './types.js';
 
-export type { StepName, FieldName } from './types.js';
+export type { StepName, FieldName, StepProps, StepRegistration } from './types.js';
 import { FormikContext, useFormik, type FormikValues } from 'formik';
 import {
     Context,
+    CurrentStepContext,
     FieldNestingContext,
     internalState,
 } from './context/index.js';
 import { useField } from './hooks/field/index.js';
 import { useLifecycle } from './hooks/lifecycle/index.js';
 import { useMutate } from './hooks/mutate/index.js';
-import { useReset } from './hooks/reset/index.js';
 
 import { useSteps } from './hooks/steps/index.js';
 import { useSchema } from './hooks/schema/index.js';
 import { useConfig } from './hooks/config/index.js';
 import { Expose } from './components/expose/index.js';
 import { useContext } from './context/index.js';
+export { Step } from './components/step/index.js';
 
 /**
  * @name useForm
@@ -37,24 +39,76 @@ import { useContext } from './context/index.js';
  * @param {FormikateProps<Values>} props The configuration options for the form.
  * @returns {FormikateReturn<Values>} The state and methods for managing the form.
  */
-export function useForm<Values extends FormikValues>({
-    initialStep = null,
-    stepSequence = [],
-    ...props
-}: FormikateProps<Values>): FormikateReturn<Values> {
-    const [step, setStep] = useState<null | StepName>(initialStep);
+export function useForm<Values extends FormikValues>(
+    props: FormikateProps<Values>,
+): FormikateReturn<Values> {
+    const [currentStep, setCurrentStep] = useState<null | StepName>(null);
     const [fields, setFields] = useState<Fields>([]);
+    const [stepRegistry, setStepRegistry] = useState<Map<string, StepRegistration>>(new Map());
 
-    const { current, next, previous } = useSteps<Values>({
-        step,
-        stepSequence,
+    const steps = useMemo(
+        () => Array.from(stepRegistry.values()).sort((a, b) => a.order - b.order),
+        [stepRegistry],
+    );
+
+    const hasInitializedStep = React.useRef(false);
+
+    useLayoutEffect(() => {
+        if (!hasInitializedStep.current && steps.length > 0) {
+            const initialStep = steps.find((s) => s.initial) ?? steps[0];
+            if (initialStep) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setCurrentStep(initialStep.order);
+                hasInitializedStep.current = true;
+            }
+        }
+    }, [steps]);
+
+    const registerStep = useCallback((step: StepRegistration, reactId: string) => {
+        setStepRegistry((prev) => {
+            const next = new Map(prev);
+            next.set(reactId, step);
+            return next;
+        });
+    }, []);
+
+    const unregisterStep = useCallback((reactId: string) => {
+        setStepRegistry((prev) => {
+            const next = new Map(prev);
+            next.delete(reactId);
+            return next;
+        });
+    }, []);
+
+    const incrementStepFieldCount = useCallback(() => {}, []);
+    const decrementStepFieldCount = useCallback(() => {}, []);
+
+    const stepsWithFieldCounts = useMemo(() => {
+        const stepFieldCounts = new Map<number, number>();
+        for (const field of fields) {
+            if (field.stepOrder != null) {
+                stepFieldCounts.set(
+                    field.stepOrder,
+                    (stepFieldCounts.get(field.stepOrder) || 0) + 1,
+                );
+            }
+        }
+        return Array.from(stepRegistry.values())
+            .map((step) => ({
+                ...step,
+                fieldCount: stepFieldCounts.get(step.order) || 0,
+            }))
+            .sort((a, b) => a.order - b.order);
+    }, [stepRegistry, fields]);
+
+    const { current, next, previous } = useSteps({
+        step: currentStep,
+        steps: stepsWithFieldCounts,
         fields,
     });
 
-    const schema = useSchema({ fields, step, stepSequence, current });
+    const schema = useSchema({ fields, step: currentStep, steps: stepsWithFieldCounts });
     const form = useFormik<Values>({ ...props, validationSchema: schema });
-
-    useReset<Values>({ initialStep, stepSequence, setStep });
 
     return useConfig({
         current,
@@ -62,10 +116,14 @@ export function useForm<Values extends FormikValues>({
         form,
         next,
         previous,
-        step,
-        stepSequence,
-        setStep,
+        step: currentStep,
+        steps: stepsWithFieldCounts,
+        setStep: setCurrentStep,
         setFields,
+        registerStep,
+        unregisterStep,
+        incrementStepFieldCount,
+        decrementStepFieldCount,
     });
 }
 
@@ -94,7 +152,7 @@ export function Form<Values extends FormikValues>({
 export function Field<T>(
     props: Field<T> & {
         hidden?: boolean;
-        default?: T;
+        initial?: T;
         children: React.ReactNode;
     },
 ): null | ReactElement;
@@ -108,28 +166,24 @@ export function Field(
 
 export function Field<T = unknown>({
     hidden = false,
-    default: defaultValue,
+    initial: initialValue,
     children,
     ...props
 }: FieldProps<T>): null | ReactElement {
-    const context = useContext();
-    const state = useMemo(() => context?.[internalState], [context]);
-    const field = useField(props);
+    useContext();
+    const parentStepOrder = React.useContext(CurrentStepContext);
+    const field = useField({ ...props, stepOrder: parentStepOrder });
     const isNested = React.useContext(FieldNestingContext);
-
     if (isNested) {
         console.warn(
             `[Formikate] Field "${field.name}" is nested inside another Field — this may cause unexpected behavior.`,
         );
     }
 
-    useLifecycle({ ...field, default: defaultValue });
+    useLifecycle({ ...field, initial: initialValue });
     useMutate(field);
 
-    return hidden ||
-        (state.step != null &&
-            field.step != null &&
-            state.step !== field.step) ? null : (
+    return hidden ? null : (
         <FieldNestingContext value={true}>{children}</FieldNestingContext>
     );
 }

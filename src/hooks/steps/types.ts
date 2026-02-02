@@ -1,10 +1,7 @@
-import type { FormikateProps, Fields, StepName } from '~/types.js';
-import type { FormikValues } from 'formik';
+import type { StepName, StepRegistration, Fields } from '~/types.js';
 
-export type StepsProps<Values extends FormikValues> = Pick<
-    FormikateProps<Values>,
-    'stepSequence'
-> & {
+export type StepsProps = {
     step: StepName | null;
+    steps: StepRegistration[];
     fields: Fields;
 };

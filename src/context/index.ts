@@ -8,6 +8,10 @@ export const Context =
 
 export const FieldNestingContext = React.createContext<boolean>(false);
 
+export const StepNestingContext = React.createContext<boolean>(false);
+
+export const CurrentStepContext = React.createContext<number | null>(null);
+
 export const internalState = Symbol('formikate.internalState');
 
 export function useContext(): FormikateReturn<FormikValues> {

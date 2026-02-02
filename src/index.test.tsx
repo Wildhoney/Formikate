@@ -3,16 +3,16 @@ import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { faker } from '@faker-js/faker';
 import * as z from 'zod';
 import * as React from 'react';
-import { useForm, Form, Field } from './index.js';
+import { useForm, Form, Field, Step } from './index.js';
 
 afterEach(() => {
     cleanup();
 });
 
 describe('Field Component', () => {
-    describe('default prop behavior', () => {
-        it('should set field value to default on mount', () => {
-            const defaultName = faker.person.fullName();
+    describe('initial prop behavior', () => {
+        it('should set field value to initial on mount', () => {
+            const initialFieldValue = faker.person.fullName();
             const initialName = faker.person.fullName();
 
             function TestForm() {
@@ -26,7 +26,7 @@ describe('Field Component', () => {
                         <Field
                             name="name"
                             validate={z.string()}
-                            default={defaultName}
+                            initial={initialFieldValue}
                         >
                             <input
                                 data-testid="name-input"
@@ -39,11 +39,11 @@ describe('Field Component', () => {
 
             render(<TestForm />);
             const input = screen.getByTestId('name-input') as HTMLInputElement;
-            expect(input.value).toBe(defaultName);
+            expect(input.value).toBe(initialFieldValue);
         });
 
-        it('should reset to default value on unmount', async () => {
-            const defaultName = faker.person.fullName();
+        it('should reset to initial value on unmount', async () => {
+            const initialFieldValue = faker.person.fullName();
             const changedName = faker.person.fullName();
 
             function TestForm() {
@@ -59,7 +59,7 @@ describe('Field Component', () => {
                             <Field
                                 name="name"
                                 validate={z.string()}
-                                default={defaultName}
+                                initial={initialFieldValue}
                             >
                                 <input
                                     data-testid="name-input"
@@ -81,7 +81,7 @@ describe('Field Component', () => {
             const { getByTestId } = render(<TestForm />);
             const input = getByTestId('name-input') as HTMLInputElement;
 
-            expect(input.value).toBe(defaultName);
+            expect(input.value).toBe(initialFieldValue);
 
             input.value = changedName;
             input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -89,11 +89,11 @@ describe('Field Component', () => {
             getByTestId('toggle-button').click();
 
             await waitFor(() => {
-                expect(getByTestId('form-value').textContent).toBe(defaultName);
+                expect(getByTestId('form-value').textContent).toBe(initialFieldValue);
             });
         });
 
-        it('should reset to initialValue when no default is provided', async () => {
+        it('should reset to initialValue when no initial is provided', async () => {
             const initialName = faker.person.fullName();
             const changedName = faker.person.fullName();
 
@@ -138,8 +138,8 @@ describe('Field Component', () => {
             });
         });
 
-        it('should handle numeric default values', () => {
-            const defaultAge = faker.number.int({ min: 18, max: 100 });
+        it('should handle numeric initial values', () => {
+            const initialAge = faker.number.int({ min: 18, max: 100 });
 
             function TestForm() {
                 const form = useForm({
@@ -152,7 +152,7 @@ describe('Field Component', () => {
                         <Field
                             name="age"
                             validate={z.number()}
-                            default={defaultAge}
+                            initial={initialAge}
                         >
                             <input
                                 type="number"
@@ -166,11 +166,11 @@ describe('Field Component', () => {
 
             render(<TestForm />);
             const input = screen.getByTestId('age-input') as HTMLInputElement;
-            expect(Number(input.value)).toBe(defaultAge);
+            expect(Number(input.value)).toBe(initialAge);
         });
 
-        it('should handle boolean default values', () => {
-            const defaultChecked = faker.datatype.boolean();
+        it('should handle boolean initial values', () => {
+            const initialChecked = faker.datatype.boolean();
 
             function TestForm() {
                 const form = useForm({
@@ -183,7 +183,7 @@ describe('Field Component', () => {
                         <Field
                             name="subscribe"
                             validate={z.boolean()}
-                            default={defaultChecked}
+                            initial={initialChecked}
                         >
                             <input
                                 type="checkbox"
@@ -200,11 +200,11 @@ describe('Field Component', () => {
 
             render(<TestForm />);
             const formValue = screen.getByTestId('form-value');
-            expect(formValue.textContent).toBe(String(defaultChecked));
+            expect(formValue.textContent).toBe(String(initialChecked));
         });
 
-        it('should handle complex object default values', () => {
-            const defaultAddress = {
+        it('should handle complex object initial values', () => {
+            const initialAddress = {
                 street: faker.location.streetAddress(),
                 city: faker.location.city(),
                 zip: faker.location.zipCode(),
@@ -225,7 +225,7 @@ describe('Field Component', () => {
                                 city: z.string(),
                                 zip: z.string(),
                             })}
-                            default={defaultAddress}
+                            initial={initialAddress}
                         >
                             <div data-testid="address-display">
                                 {JSON.stringify(form.values.address)}
@@ -237,119 +237,152 @@ describe('Field Component', () => {
 
             render(<TestForm />);
             const display = screen.getByTestId('address-display');
-            expect(display.textContent).toBe(JSON.stringify(defaultAddress));
+            expect(display.textContent).toBe(JSON.stringify(initialAddress));
         });
     });
 
-    describe('step prop behavior', () => {
-        it('should only render field when on the correct step', () => {
-            const Steps = { Personal: 'personal', Delivery: 'delivery' };
-
+    describe('Step component behavior', () => {
+        it('should navigate between steps with fields', async () => {
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal, Steps.Delivery],
                     initialValues: { name: '', address: '' },
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field
-                            name="name"
-                            step={Steps.Personal}
-                            validate={z.string()}
-                        >
-                            <input data-testid="name-input" />
-                        </Field>
-                        <Field
-                            name="address"
-                            step={Steps.Delivery}
-                            validate={z.string()}
-                        >
-                            <input data-testid="address-input" />
-                        </Field>
-                    </Form>
-                );
-            }
-
-            render(<TestForm />);
-            expect(screen.queryByTestId('name-input')).toBeInTheDocument();
-            expect(
-                screen.queryByTestId('address-input'),
-            ).not.toBeInTheDocument();
-        });
-
-        it('should render field without step prop regardless of current step', () => {
-            const Steps = { Personal: 'personal' };
-
-            function TestForm() {
-                const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal],
-                    initialValues: { email: '' },
-                    onSubmit: () => {},
-                });
-
-                return (
-                    <Form controller={form}>
-                        <Field name="email" validate={z.string()}>
-                            <input data-testid="email-input" />
-                        </Field>
-                    </Form>
-                );
-            }
-
-            render(<TestForm />);
-            expect(screen.queryByTestId('email-input')).toBeInTheDocument();
-        });
-
-        it('should show/hide fields when step changes', async () => {
-            const Steps = { Personal: 'personal', Delivery: 'delivery' };
-
-            function TestForm() {
-                const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal, Steps.Delivery],
-                    initialValues: { name: '', address: '' },
-                    onSubmit: () => {},
-                });
-
-                return (
-                    <Form controller={form}>
-                        <Field
-                            name="name"
-                            step={Steps.Personal}
-                            validate={z.string()}
-                        >
-                            <input data-testid="name-input" />
-                        </Field>
-                        <Field
-                            name="address"
-                            step={Steps.Delivery}
-                            validate={z.string()}
-                        >
-                            <input data-testid="address-input" />
-                        </Field>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field name="address" validate={z.string()}>
+                                <input data-testid="address-input" />
+                            </Field>
+                        </Step>
                         <button
                             data-testid="next-button"
                             onClick={form.handleNext}
                         >
                             Next
                         </button>
+                        <div data-testid="current-step">{form.step}</div>
                     </Form>
                 );
             }
 
-            const { getByTestId, queryByTestId } = render(<TestForm />);
-            expect(queryByTestId('name-input')).toBeInTheDocument();
-            expect(queryByTestId('address-input')).not.toBeInTheDocument();
+            const { getByTestId } = render(<TestForm />);
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
 
             getByTestId('next-button').click();
 
             await waitFor(() => {
-                expect(queryByTestId('name-input')).not.toBeInTheDocument();
-                expect(queryByTestId('address-input')).toBeInTheDocument();
+                expect(getByTestId('current-step').textContent).toBe('2');
+            });
+        });
+
+        it('should skip steps with no fields', async () => {
+            function TestForm() {
+                const [showStep2Field] = React.useState(false);
+                const form = useForm({
+                    initialValues: { name: '', address: '', review: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            {showStep2Field && (
+                                <Field name="address" validate={z.string()}>
+                                    <input data-testid="address-input" />
+                                </Field>
+                            )}
+                        </Step>
+                        <Step order={3}>
+                            <Field name="review" validate={z.string()}>
+                                <input data-testid="review-input" />
+                            </Field>
+                        </Step>
+                        <button
+                            data-testid="next-button"
+                            onClick={form.handleNext}
+                        >
+                            Next
+                        </button>
+                        <div data-testid="current-step">{form.step}</div>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
+
+            getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('3');
+            });
+        });
+
+        it('should handle initial prop change to reset step', async () => {
+            function TestForm() {
+                const [resetToStep2, setResetToStep2] = React.useState(false);
+                const form = useForm({
+                    initialValues: { name: '', address: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Step initial={!resetToStep2} order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step initial={resetToStep2} order={2}>
+                            <Field name="address" validate={z.string()}>
+                                <input data-testid="address-input" />
+                            </Field>
+                        </Step>
+                        <button
+                            data-testid="next-button"
+                            onClick={form.handleNext}
+                        >
+                            Next
+                        </button>
+                        <button
+                            data-testid="reset-to-step2"
+                            onClick={() => setResetToStep2(true)}
+                        >
+                            Reset to Step 2
+                        </button>
+                        <div data-testid="current-step">{form.step}</div>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
+
+            getByTestId('reset-to-step2').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('2');
             });
         });
     });
@@ -423,21 +456,19 @@ describe('Field Component', () => {
 
     describe('virtual field behavior', () => {
         it('should render virtual field without validation', () => {
-            const Steps = { Review: 'review' };
-
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Review,
-                    stepSequence: [Steps.Review],
                     initialValues: {},
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field virtual step={Steps.Review}>
-                            <div data-testid="review-content">Review</div>
-                        </Field>
+                        <Step initial order={1}>
+                            <Field virtual>
+                                <div data-testid="review-content">Review</div>
+                            </Field>
+                        </Step>
                     </Form>
                 );
             }
@@ -446,37 +477,54 @@ describe('Field Component', () => {
             expect(screen.queryByTestId('review-content')).toBeInTheDocument();
         });
 
-        it('should respect step prop on virtual fields', () => {
-            const Steps = { Personal: 'personal', Review: 'review' };
-
+        it('should count virtual fields in step field count', async () => {
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal, Steps.Review],
-                    initialValues: {},
+                    initialValues: { name: '' },
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field virtual step={Steps.Review}>
-                            <div data-testid="review-content">Review</div>
-                        </Field>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field virtual>
+                                <div data-testid="review-content">Review</div>
+                            </Field>
+                        </Step>
+                        <button
+                            data-testid="next-button"
+                            onClick={form.handleNext}
+                        >
+                            Next
+                        </button>
+                        <div data-testid="current-step">{form.step}</div>
                     </Form>
                 );
             }
 
-            render(<TestForm />);
-            expect(
-                screen.queryByTestId('review-content'),
-            ).not.toBeInTheDocument();
+            const { getByTestId } = render(<TestForm />);
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
+
+            getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('2');
+            });
         });
     });
 
     describe('multiple fields behavior', () => {
         it('should handle multiple fields independently', () => {
-            const defaultName = faker.person.fullName();
-            const defaultEmail = faker.internet.email();
+            const initialName = faker.person.fullName();
+            const initialEmail = faker.internet.email();
 
             function TestForm() {
                 const form = useForm({
@@ -489,7 +537,7 @@ describe('Field Component', () => {
                         <Field
                             name="name"
                             validate={z.string()}
-                            default={defaultName}
+                            initial={initialName}
                         >
                             <input
                                 data-testid="name-input"
@@ -499,7 +547,7 @@ describe('Field Component', () => {
                         <Field
                             name="email"
                             validate={z.string()}
-                            default={defaultEmail}
+                            initial={initialEmail}
                         >
                             <input
                                 data-testid="email-input"
@@ -518,13 +566,13 @@ describe('Field Component', () => {
                 'email-input',
             ) as HTMLInputElement;
 
-            expect(nameInput.value).toBe(defaultName);
-            expect(emailInput.value).toBe(defaultEmail);
+            expect(nameInput.value).toBe(initialName);
+            expect(emailInput.value).toBe(initialEmail);
         });
 
         it('should unmount multiple fields independently', async () => {
-            const defaultName = faker.person.fullName();
-            const defaultEmail = faker.internet.email();
+            const initialName = faker.person.fullName();
+            const initialEmail = faker.internet.email();
 
             function TestForm() {
                 const [showName, setShowName] = React.useState(true);
@@ -540,7 +588,7 @@ describe('Field Component', () => {
                             <Field
                                 name="name"
                                 validate={z.string()}
-                                default={defaultName}
+                                initial={initialName}
                             >
                                 <input data-testid="name-input" />
                             </Field>
@@ -549,7 +597,7 @@ describe('Field Component', () => {
                             <Field
                                 name="email"
                                 validate={z.string()}
-                                default={defaultEmail}
+                                initial={initialEmail}
                             >
                                 <input data-testid="email-input" />
                             </Field>
@@ -577,16 +625,16 @@ describe('Field Component', () => {
             getByTestId('toggle-name').click();
 
             await waitFor(() => {
-                expect(getByTestId('name-value').textContent).toBe(defaultName);
+                expect(getByTestId('name-value').textContent).toBe(initialName);
             });
 
-            expect(getByTestId('email-value').textContent).toBe(defaultEmail);
+            expect(getByTestId('email-value').textContent).toBe(initialEmail);
 
             getByTestId('toggle-email').click();
 
             await waitFor(() => {
                 expect(getByTestId('email-value').textContent).toBe(
-                    defaultEmail,
+                    initialEmail,
                 );
             });
         });
@@ -663,8 +711,8 @@ describe('Field Component', () => {
     });
 
     describe('conditional rendering', () => {
-        it('should handle conditionally rendered fields with defaults', async () => {
-            const defaultAddress = faker.location.streetAddress();
+        it('should handle conditionally rendered fields with initial values', async () => {
+            const initialAddress = faker.location.streetAddress();
 
             function TestForm() {
                 const form = useForm({
@@ -685,7 +733,7 @@ describe('Field Component', () => {
                             <Field
                                 name="address"
                                 validate={z.string()}
-                                default={defaultAddress}
+                                initial={initialAddress}
                             >
                                 <input
                                     data-testid="address-input"
@@ -710,14 +758,14 @@ describe('Field Component', () => {
             await waitFor(() => {
                 expect(queryByTestId('address-input')).toBeInTheDocument();
                 expect(getByTestId('address-value').textContent).toBe(
-                    defaultAddress,
+                    initialAddress,
                 );
             });
         });
     });
 
     describe('type safety', () => {
-        it('should properly type default value based on validation schema', () => {
+        it('should properly type initial value based on validation schema', () => {
             function TestForm() {
                 const form = useForm({
                     initialValues: { count: 0 },
@@ -726,7 +774,7 @@ describe('Field Component', () => {
 
                 return (
                     <Form controller={form}>
-                        <Field name="count" validate={z.number()} default={42}>
+                        <Field name="count" validate={z.number()} initial={42}>
                             <input
                                 type="number"
                                 data-testid="count-input"
@@ -745,55 +793,41 @@ describe('Field Component', () => {
 
     describe('deferred navigation', () => {
         it('should navigate to correct step after field mount/unmount changes', async () => {
-            const Steps = {
-                Personal: 'personal',
-                Address: 'address',
-                Review: 'review',
-            };
-
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal, Steps.Address, Steps.Review],
                     initialValues: { guest: false, name: '', address: '' },
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field
-                            name="name"
-                            step={Steps.Personal}
-                            validate={z.string()}
-                        >
-                            <input data-testid="name-input" />
-                        </Field>
-
-                        <Field
-                            name="guest"
-                            step={Steps.Personal}
-                            validate={z.boolean()}
-                        >
-                            <input
-                                type="checkbox"
-                                data-testid="guest-checkbox"
-                                {...form.getFieldProps('guest')}
-                            />
-                        </Field>
-
-                        {form.values.guest === false && (
-                            <Field
-                                name="address"
-                                step={Steps.Address}
-                                validate={z.string()}
-                            >
-                                <input data-testid="address-input" />
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
                             </Field>
-                        )}
 
-                        <Field virtual step={Steps.Review}>
-                            <div data-testid="review-content">Review</div>
-                        </Field>
+                            <Field name="guest" validate={z.boolean()}>
+                                <input
+                                    type="checkbox"
+                                    data-testid="guest-checkbox"
+                                    {...form.getFieldProps('guest')}
+                                />
+                            </Field>
+                        </Step>
+
+                        <Step order={2}>
+                            {form.values.guest === false && (
+                                <Field name="address" validate={z.string()}>
+                                    <input data-testid="address-input" />
+                                </Field>
+                            )}
+                        </Step>
+
+                        <Step order={3}>
+                            <Field virtual>
+                                <div data-testid="review-content">Review</div>
+                            </Field>
+                        </Step>
 
                         <button
                             data-testid="toggle-and-next"
@@ -812,28 +846,20 @@ describe('Field Component', () => {
 
             const { getByTestId } = render(<TestForm />);
 
-            expect(getByTestId('current-step').textContent).toBe(
-                Steps.Personal,
-            );
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
 
-            // When guest is set to true, the Address field unmounts
-            // so handleNext should skip to Review (the next available step)
             getByTestId('toggle-and-next').click();
 
             await waitFor(() => {
-                expect(getByTestId('current-step').textContent).toBe(
-                    Steps.Review,
-                );
+                expect(getByTestId('current-step').textContent).toBe('3');
             });
         });
 
         it('should use latest step calculation when handleNext is deferred', async () => {
-            const Steps = { Step1: 'step1', Step2: 'step2', Step3: 'step3' };
-
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Step1,
-                    stepSequence: [Steps.Step1, Steps.Step2, Steps.Step3],
                     initialValues: { skipStep2: false },
                     onSubmit: () => {},
                 });
@@ -845,34 +871,28 @@ describe('Field Component', () => {
 
                 return (
                     <Form controller={form}>
-                        <Field
-                            name="skipStep2"
-                            step={Steps.Step1}
-                            validate={z.boolean()}
-                        >
-                            <input
-                                type="checkbox"
-                                data-testid="skip-checkbox"
-                            />
-                        </Field>
-
-                        {!form.values.skipStep2 && (
-                            <Field
-                                name="field2"
-                                step={Steps.Step2}
-                                validate={z.string()}
-                            >
-                                <input data-testid="field2-input" />
+                        <Step initial order={1}>
+                            <Field name="skipStep2" validate={z.boolean()}>
+                                <input
+                                    type="checkbox"
+                                    data-testid="skip-checkbox"
+                                />
                             </Field>
-                        )}
+                        </Step>
 
-                        <Field
-                            name="field3"
-                            step={Steps.Step3}
-                            validate={z.string()}
-                        >
-                            <input data-testid="field3-input" />
-                        </Field>
+                        <Step order={2}>
+                            {!form.values.skipStep2 && (
+                                <Field name="field2" validate={z.string()}>
+                                    <input data-testid="field2-input" />
+                                </Field>
+                            )}
+                        </Step>
+
+                        <Step order={3}>
+                            <Field name="field3" validate={z.string()}>
+                                <input data-testid="field3-input" />
+                            </Field>
+                        </Step>
 
                         <button data-testid="next-button" onClick={handleClick}>
                             Next
@@ -885,55 +905,43 @@ describe('Field Component', () => {
 
             const { getByTestId } = render(<TestForm />);
 
-            expect(getByTestId('current-step').textContent).toBe(Steps.Step1);
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
 
-            // When skipStep2 is set to true, field2 unmounts
-            // so handleNext should skip to Step3 (the next available step)
             getByTestId('next-button').click();
 
             await waitFor(() => {
-                expect(getByTestId('current-step').textContent).toBe(
-                    Steps.Step3,
-                );
+                expect(getByTestId('current-step').textContent).toBe('3');
             });
         });
 
         it('should handle rapid handleNext calls correctly', async () => {
-            const Steps = { Step1: 'step1', Step2: 'step2', Step3: 'step3' };
-
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Step1,
-                    stepSequence: [Steps.Step1, Steps.Step2, Steps.Step3],
                     initialValues: { field1: '', field2: '', field3: '' },
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field
-                            name="field1"
-                            step={Steps.Step1}
-                            validate={z.string()}
-                        >
-                            <input data-testid="field1-input" />
-                        </Field>
+                        <Step initial order={1}>
+                            <Field name="field1" validate={z.string()}>
+                                <input data-testid="field1-input" />
+                            </Field>
+                        </Step>
 
-                        <Field
-                            name="field2"
-                            step={Steps.Step2}
-                            validate={z.string()}
-                        >
-                            <input data-testid="field2-input" />
-                        </Field>
+                        <Step order={2}>
+                            <Field name="field2" validate={z.string()}>
+                                <input data-testid="field2-input" />
+                            </Field>
+                        </Step>
 
-                        <Field
-                            name="field3"
-                            step={Steps.Step3}
-                            validate={z.string()}
-                        >
-                            <input data-testid="field3-input" />
-                        </Field>
+                        <Step order={3}>
+                            <Field name="field3" validate={z.string()}>
+                                <input data-testid="field3-input" />
+                            </Field>
+                        </Step>
 
                         <button
                             data-testid="next-button"
@@ -949,32 +957,26 @@ describe('Field Component', () => {
 
             const { getByTestId } = render(<TestForm />);
 
-            expect(getByTestId('current-step').textContent).toBe(Steps.Step1);
-
-            getByTestId('next-button').click();
-
             await waitFor(() => {
-                expect(getByTestId('current-step').textContent).toBe(
-                    Steps.Step2,
-                );
+                expect(getByTestId('current-step').textContent).toBe('1');
             });
 
             getByTestId('next-button').click();
 
             await waitFor(() => {
-                expect(getByTestId('current-step').textContent).toBe(
-                    Steps.Step3,
-                );
+                expect(getByTestId('current-step').textContent).toBe('2');
+            });
+
+            getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('3');
             });
         });
 
         it('should handle onSubmit that changes fields then calls handleNext', async () => {
-            const Steps = { Form: 'form', Extra: 'extra', Review: 'review' };
-
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Form,
-                    stepSequence: [Steps.Form, Steps.Extra, Steps.Review],
                     initialValues: {
                         shouldShowExtra: false,
                         name: 'test',
@@ -982,7 +984,7 @@ describe('Field Component', () => {
                     },
                     onSubmit: async () => {
                         form.setFieldValue('shouldShowExtra', true);
-                        if (form.step !== Steps.Review) {
+                        if (!form.isStep(3)) {
                             form.handleNext();
                         }
                     },
@@ -991,30 +993,31 @@ describe('Field Component', () => {
                 return (
                     <Form controller={form}>
                         <form onSubmit={form.handleSubmit}>
-                            <Field
-                                name="name"
-                                step={Steps.Form}
-                                validate={z.string()}
-                            >
-                                <input
-                                    data-testid="name-input"
-                                    {...form.getFieldProps('name')}
-                                />
-                            </Field>
-
-                            {form.values.shouldShowExtra && (
-                                <Field
-                                    name="extra"
-                                    step={Steps.Extra}
-                                    validate={z.string().optional()}
-                                >
-                                    <input data-testid="extra-input" />
+                            <Step initial order={1}>
+                                <Field name="name" validate={z.string()}>
+                                    <input
+                                        data-testid="name-input"
+                                        {...form.getFieldProps('name')}
+                                    />
                                 </Field>
-                            )}
+                            </Step>
 
-                            <Field virtual step={Steps.Review}>
-                                <div data-testid="review-content">Review</div>
-                            </Field>
+                            <Step order={2}>
+                                {form.values.shouldShowExtra && (
+                                    <Field
+                                        name="extra"
+                                        validate={z.string().optional()}
+                                    >
+                                        <input data-testid="extra-input" />
+                                    </Field>
+                                )}
+                            </Step>
+
+                            <Step order={3}>
+                                <Field virtual>
+                                    <div data-testid="review-content">Review</div>
+                                </Field>
+                            </Step>
 
                             <button type="submit" data-testid="submit-button">
                                 Submit
@@ -1028,16 +1031,14 @@ describe('Field Component', () => {
 
             const { getByTestId } = render(<TestForm />);
 
-            expect(getByTestId('current-step').textContent).toBe(Steps.Form);
+            await waitFor(() => {
+                expect(getByTestId('current-step').textContent).toBe('1');
+            });
 
             getByTestId('submit-button').click();
 
-            // After submit, shouldShowExtra is set to true, mounting the Extra field
-            // handleNext should navigate to Extra step (the newly available step)
             await waitFor(() => {
-                expect(getByTestId('current-step').textContent).toBe(
-                    Steps.Extra,
-                );
+                expect(getByTestId('current-step').textContent).toBe('2');
             });
         });
     });
@@ -1105,6 +1106,41 @@ describe('Field Component', () => {
         });
     });
 
+    describe('nested Step warning', () => {
+        it('should warn when Step components are nested', () => {
+            const warnSpy = vi
+                .spyOn(console, 'warn')
+                .mockImplementation(() => {});
+
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Step initial order={1}>
+                            <Step order={2}>
+                                <Field name="name" validate={z.string()}>
+                                    <input data-testid="name-input" />
+                                </Field>
+                            </Step>
+                        </Step>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            expect(warnSpy).toHaveBeenCalledWith(
+                '[Formikate] Step with order 2 is nested inside another Step — this may cause unexpected behavior.',
+            );
+
+            warnSpy.mockRestore();
+        });
+    });
+
     describe('isVisible() method', () => {
         it('should return false for non-existent fields', () => {
             function TestForm() {
@@ -1153,23 +1189,25 @@ describe('Field Component', () => {
             );
         });
 
-        it('should return true for fields on the current step', () => {
+        it('should return true for fields on the current step', async () => {
             function TestForm() {
                 const form = useForm({
                     initialValues: { name: '', email: '' },
-                    initialStep: 1,
-                    stepSequence: [1, 2],
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field name="name" step={1} validate={z.string()}>
-                            <input data-testid="name-input" />
-                        </Field>
-                        <Field name="email" step={2} validate={z.string()}>
-                            <input data-testid="email-input" />
-                        </Field>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field name="email" validate={z.string()}>
+                                <input data-testid="email-input" />
+                            </Field>
+                        </Step>
                         <div data-testid="name-visible">
                             {String(form.isVisible('name'))}
                         </div>
@@ -1181,29 +1219,34 @@ describe('Field Component', () => {
             }
 
             render(<TestForm />);
-            expect(screen.getByTestId('name-visible').textContent).toBe('true');
-            expect(screen.getByTestId('email-visible').textContent).toBe(
-                'false',
-            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('name-visible').textContent).toBe('true');
+                expect(screen.getByTestId('email-visible').textContent).toBe(
+                    'false',
+                );
+            });
         });
 
         it('should update when step changes', async () => {
             function TestForm() {
                 const form = useForm({
                     initialValues: { name: '', email: '' },
-                    initialStep: 1,
-                    stepSequence: [1, 2],
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <Field name="name" step={1} validate={z.string()}>
-                            <input data-testid="name-input" />
-                        </Field>
-                        <Field name="email" step={2} validate={z.string()}>
-                            <input data-testid="email-input" />
-                        </Field>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field name="email" validate={z.string()}>
+                                <input data-testid="email-input" />
+                            </Field>
+                        </Step>
                         <button
                             data-testid="next-button"
                             onClick={() => form.handleNext()}
@@ -1222,10 +1265,12 @@ describe('Field Component', () => {
 
             render(<TestForm />);
 
-            expect(screen.getByTestId('name-visible').textContent).toBe('true');
-            expect(screen.getByTestId('email-visible').textContent).toBe(
-                'false',
-            );
+            await waitFor(() => {
+                expect(screen.getByTestId('name-visible').textContent).toBe('true');
+                expect(screen.getByTestId('email-visible').textContent).toBe(
+                    'false',
+                );
+            });
 
             screen.getByTestId('next-button').click();
 
@@ -1266,105 +1311,25 @@ describe('Field Component', () => {
     });
 
     describe('isStep() method', () => {
-        it('should return true when step matches current step', () => {
-            const Steps = { Personal: 'personal', Delivery: 'delivery' };
-
+        it('should return true when step matches current step', async () => {
             function TestForm() {
                 const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal, Steps.Delivery],
                     initialValues: { name: '' },
                     onSubmit: () => {},
                 });
 
                 return (
                     <Form controller={form}>
-                        <div data-testid="is-personal">
-                            {String(form.isStep(Steps.Personal))}
-                        </div>
-                        <div data-testid="is-delivery">
-                            {String(form.isStep(Steps.Delivery))}
-                        </div>
-                    </Form>
-                );
-            }
-
-            render(<TestForm />);
-            expect(screen.getByTestId('is-personal').textContent).toBe('true');
-            expect(screen.getByTestId('is-delivery').textContent).toBe('false');
-        });
-
-        it('should update when step changes', async () => {
-            const Steps = { Personal: 'personal', Delivery: 'delivery' };
-
-            function TestForm() {
-                const form = useForm({
-                    initialStep: Steps.Personal,
-                    stepSequence: [Steps.Personal, Steps.Delivery],
-                    initialValues: { name: '' },
-                    onSubmit: () => {},
-                });
-
-                return (
-                    <Form controller={form}>
-                        <Field
-                            name="name"
-                            step={Steps.Personal}
-                            validate={z.string()}
-                        >
-                            <input data-testid="name-input" />
-                        </Field>
-                        <Field
-                            name="address"
-                            step={Steps.Delivery}
-                            validate={z.string()}
-                        >
-                            <input data-testid="address-input" />
-                        </Field>
-                        <button
-                            data-testid="next-button"
-                            onClick={() => form.handleNext()}
-                        >
-                            Next
-                        </button>
-                        <div data-testid="is-personal">
-                            {String(form.isStep(Steps.Personal))}
-                        </div>
-                        <div data-testid="is-delivery">
-                            {String(form.isStep(Steps.Delivery))}
-                        </div>
-                    </Form>
-                );
-            }
-
-            render(<TestForm />);
-
-            expect(screen.getByTestId('is-personal').textContent).toBe('true');
-            expect(screen.getByTestId('is-delivery').textContent).toBe('false');
-
-            screen.getByTestId('next-button').click();
-
-            await waitFor(() => {
-                expect(screen.getByTestId('is-personal').textContent).toBe(
-                    'false',
-                );
-                expect(screen.getByTestId('is-delivery').textContent).toBe(
-                    'true',
-                );
-            });
-        });
-
-        it('should work with numeric steps', () => {
-            function TestForm() {
-                const form = useForm({
-                    initialStep: 1,
-                    stepSequence: [1, 2, 3],
-                    initialValues: { name: '' },
-                    onSubmit: () => {},
-                });
-
-                return (
-                    <Form controller={form}>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field name="email" validate={z.string()}>
+                                <input data-testid="email-input" />
+                            </Field>
+                        </Step>
                         <div data-testid="is-step-1">
                             {String(form.isStep(1))}
                         </div>
@@ -1376,8 +1341,215 @@ describe('Field Component', () => {
             }
 
             render(<TestForm />);
-            expect(screen.getByTestId('is-step-1').textContent).toBe('true');
-            expect(screen.getByTestId('is-step-2').textContent).toBe('false');
+
+            await waitFor(() => {
+                expect(screen.getByTestId('is-step-1').textContent).toBe('true');
+                expect(screen.getByTestId('is-step-2').textContent).toBe('false');
+            });
+        });
+
+        it('should update when step changes', async () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '', address: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field name="address" validate={z.string()}>
+                                <input data-testid="address-input" />
+                            </Field>
+                        </Step>
+                        <button
+                            data-testid="next-button"
+                            onClick={() => form.handleNext()}
+                        >
+                            Next
+                        </button>
+                        <div data-testid="is-step-1">
+                            {String(form.isStep(1))}
+                        </div>
+                        <div data-testid="is-step-2">
+                            {String(form.isStep(2))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('is-step-1').textContent).toBe('true');
+                expect(screen.getByTestId('is-step-2').textContent).toBe('false');
+            });
+
+            screen.getByTestId('next-button').click();
+
+            await waitFor(() => {
+                expect(screen.getByTestId('is-step-1').textContent).toBe(
+                    'false',
+                );
+                expect(screen.getByTestId('is-step-2').textContent).toBe(
+                    'true',
+                );
+            });
+        });
+
+        it('should work with numeric steps', async () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Step initial order={1}>
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        </Step>
+                        <Step order={2}>
+                            <Field name="email" validate={z.string()}>
+                                <input data-testid="email-input" />
+                            </Field>
+                        </Step>
+                        <Step order={3}>
+                            <Field virtual>
+                                <div>Review</div>
+                            </Field>
+                        </Step>
+                        <div data-testid="is-step-1">
+                            {String(form.isStep(1))}
+                        </div>
+                        <div data-testid="is-step-2">
+                            {String(form.isStep(2))}
+                        </div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('is-step-1').textContent).toBe('true');
+                expect(screen.getByTestId('is-step-2').textContent).toBe('false');
+            });
+        });
+    });
+
+    describe('forms without Steps', () => {
+        it('should work as a single-step form without Step components', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '', email: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="name" validate={z.string()}>
+                            <input data-testid="name-input" />
+                        </Field>
+                        <Field name="email" validate={z.string()}>
+                            <input data-testid="email-input" />
+                        </Field>
+                        <div data-testid="step">{String(form.step)}</div>
+                        <div data-testid="is-next">{String(form.isNext)}</div>
+                        <div data-testid="is-previous">{String(form.isPrevious)}</div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('step').textContent).toBe('null');
+            expect(screen.getByTestId('is-next').textContent).toBe('false');
+            expect(screen.getByTestId('is-previous').textContent).toBe('false');
+        });
+    });
+
+    describe('isEmpty property', () => {
+        it('should return true when no fields are registered', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: {},
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <div data-testid="is-empty">{String(form.isEmpty)}</div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('is-empty').textContent).toBe('true');
+        });
+
+        it('should return false when fields are registered', () => {
+            function TestForm() {
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        <Field name="name" validate={z.string()}>
+                            <input data-testid="name-input" />
+                        </Field>
+                        <div data-testid="is-empty">{String(form.isEmpty)}</div>
+                    </Form>
+                );
+            }
+
+            render(<TestForm />);
+            expect(screen.getByTestId('is-empty').textContent).toBe('false');
+        });
+
+        it('should update when all fields are conditionally hidden', async () => {
+            function TestForm() {
+                const [showFields, setShowFields] = React.useState(true);
+                const form = useForm({
+                    initialValues: { name: '' },
+                    onSubmit: () => {},
+                });
+
+                return (
+                    <Form controller={form}>
+                        {showFields && (
+                            <Field name="name" validate={z.string()}>
+                                <input data-testid="name-input" />
+                            </Field>
+                        )}
+                        <button
+                            data-testid="toggle-button"
+                            onClick={() => setShowFields(false)}
+                        >
+                            Hide Fields
+                        </button>
+                        <div data-testid="is-empty">{String(form.isEmpty)}</div>
+                    </Form>
+                );
+            }
+
+            const { getByTestId } = render(<TestForm />);
+
+            expect(getByTestId('is-empty').textContent).toBe('false');
+
+            getByTestId('toggle-button').click();
+
+            await waitFor(() => {
+                expect(getByTestId('is-empty').textContent).toBe('true');
+            });
         });
     });
 });

@@ -22,7 +22,7 @@ export default function Buttons() {
                 disabled={form.isSubmitting}
                 css={styles.submit}
             >
-                {form.step === Steps.Review ? 'Submit' : 'Next'}
+                {form.isStep(Steps.Review) ? 'Submit' : 'Next'}
             </button>
 
             <button

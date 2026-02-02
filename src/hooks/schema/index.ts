@@ -3,17 +3,18 @@ import { toFormikValidationSchema } from 'zod-formik-adapter';
 import * as z from 'zod';
 import type { SchemaProps } from './types.js';
 
-export function useSchema({
-    fields,
-    step,
-    stepSequence,
-    current,
-}: SchemaProps) {
+export function useSchema({ fields, step, steps }: SchemaProps) {
     return useMemo(() => {
+        const currentStepOrder = step;
+
         const filteredFields = fields.filter((field) => {
-            if (step == null) return true;
-            const fieldStep = stepSequence.findIndex((x) => x === field.step);
-            return fieldStep !== -1 && fieldStep <= (current ?? 0);
+            if (currentStepOrder == null) return true;
+            if (field.stepOrder == null) return true;
+
+            const fieldStepIndex = steps.findIndex((s) => s.order === field.stepOrder);
+            const currentStepIndex = steps.findIndex((s) => s.order === currentStepOrder);
+
+            return fieldStepIndex !== -1 && fieldStepIndex <= currentStepIndex;
         });
 
         const validationSchema = filteredFields.reduce<
@@ -21,5 +22,5 @@ export function useSchema({
         >((acc, field) => ({ ...acc, [field.name]: field.validate }), {});
 
         return toFormikValidationSchema(z.object(validationSchema));
-    }, [fields, step, stepSequence, current]);
+    }, [fields, step, steps]);
 }

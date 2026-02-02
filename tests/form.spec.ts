@@ -1,142 +1,153 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Multi-step form', () => {
-    test.beforeEach(async ({ page }) => {
+test.describe('Simple multi-step form', () => {
+    test('should complete a 3-step form flow and submit', async ({ page }) => {
         await page.goto('/');
-    });
 
-    test('should display initial step', async ({ page }) => {
-        await expect(
-            page.getByRole('heading', { name: 'Personal Information' }),
-        ).toBeVisible();
-        await expect(page.locator('input[name="name"]')).toBeVisible();
-        await expect(page.locator('input[name="age"]')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Registration Form' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Back' })).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Next' })).toBeEnabled();
-    });
 
-    test('should navigate to next step', async ({ page }) => {
-        await page.locator('input[name="name"]').fill('John');
+        await page.locator('input[name="name"]').fill('John Doe');
         await page.locator('input[name="age"]').fill('30');
         await page.getByRole('button', { name: 'Next' }).click();
 
-        await expect(
-            page.getByRole('heading', { name: 'Contact Details' }),
-        ).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
+        await page.waitForTimeout(2500);
+
         await expect(page.locator('input[name="telephone"]')).toBeVisible();
         await expect(page.getByRole('button', { name: 'Back' })).toBeEnabled();
-    });
 
-    test('should preserve values when navigating back', async ({ page }) => {
-        await page.locator('input[name="name"]').fill('John');
-        await page.locator('input[name="age"]').fill('30');
+        await page.locator('input[name="telephone"]').fill('555-1234');
         await page.getByRole('button', { name: 'Next' }).click();
 
-        await expect(
-            page.getByRole('heading', { name: 'Contact Details' }),
-        ).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
+        await page.waitForTimeout(2500);
 
-        await page.getByRole('button', { name: 'Back' }).click();
+        await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+        await expect(page.getByText('Name: John Doe')).toBeVisible();
+        await expect(page.getByText('Telephone: 555-1234')).toBeVisible();
 
-        await expect(
-            page.getByRole('heading', { name: 'Personal Information' }),
-        ).toBeVisible();
-        await expect(page.locator('input[name="name"]')).toHaveValue('John');
-        await expect(page.locator('input[name="age"]')).toHaveValue('30');
+        await page.getByRole('button', { name: 'Submit' }).click();
+
+        await expect(page.getByRole('button', { name: 'Submit' })).toBeDisabled();
+        await page.waitForTimeout(2500);
+
+        await expect(page.getByText('Form submitted successfully!')).toBeVisible();
     });
 
-    test('should preserve form state through multiple navigations', async ({
-        page,
-    }) => {
-        await page.locator('input[name="name"]').fill('Jane');
+    test('should skip steps and hide fields when guest checkbox is checked', async ({ page }) => {
+        await page.goto('/');
+
+        await expect(page.locator('input[name="age"]')).toBeVisible();
+
+        await page.locator('input[name="guest"]').check();
+
+        await expect(page.locator('input[name="age"]')).not.toBeVisible();
+
+        await page.locator('input[name="name"]').fill('Guest User');
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
+        await page.waitForTimeout(2500);
+
+        await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+        await expect(page.getByText('Name: Guest User')).toBeVisible();
+        await expect(page.getByText('Guest: Yes')).toBeVisible();
+
+        await page.getByRole('button', { name: 'Submit' }).click();
+
+        await expect(page.getByRole('button', { name: 'Submit' })).toBeDisabled();
+        await page.waitForTimeout(2500);
+
+        await expect(page.getByText('Form submitted successfully!')).toBeVisible();
+    });
+
+    test('should reset to first step when clicking reset button', async ({ page }) => {
+        await page.goto('/');
+
+        await page.locator('input[name="name"]').fill('Test User');
         await page.locator('input[name="age"]').fill('25');
         await page.getByRole('button', { name: 'Next' }).click();
 
-        await expect(
-            page.getByRole('heading', { name: 'Contact Details' }),
-        ).toBeVisible();
-        await page.locator('input[name="telephone"]').fill('123456789');
+        await page.waitForTimeout(2500);
 
-        await page.getByRole('button', { name: 'Back' }).click();
-        await expect(page.locator('input[name="name"]')).toHaveValue('Jane');
-        await expect(page.locator('input[name="age"]')).toHaveValue('25');
-
-        await page.getByRole('button', { name: 'Next' }).click();
-        await expect(page.locator('input[name="telephone"]')).toHaveValue(
-            '123456789',
-        );
-    });
-
-    test('should show/hide age field based on guest checkbox', async ({
-        page,
-    }) => {
-        await expect(page.locator('input[name="age"]')).toBeVisible();
-
-        await page.locator('input[name="guest"]').check();
-        await expect(page.locator('input[name="age"]')).not.toBeVisible();
-
-        await page.locator('input[name="guest"]').uncheck();
-        await expect(page.locator('input[name="age"]')).toBeVisible();
-    });
-
-    test('should navigate to first step when clicking reset', async ({
-        page,
-    }) => {
-        await page.locator('input[name="name"]').fill('Test');
-        await page.locator('input[name="age"]').fill('99');
-        await page.getByRole('button', { name: 'Next' }).click();
-
-        await expect(
-            page.getByRole('heading', { name: 'Contact Details' }),
-        ).toBeVisible();
+        await expect(page.locator('input[name="telephone"]')).toBeVisible();
 
         await page.getByRole('button', { name: 'Reset' }).click();
 
-        await expect(
-            page.getByRole('heading', { name: 'Personal Information' }),
-        ).toBeVisible();
-        await expect(page.locator('input[name="name"]')).toHaveValue('Test');
-        await expect(page.locator('input[name="age"]')).toHaveValue('99');
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.locator('input[name="name"]')).toHaveValue('Test User');
+        await expect(page.getByRole('button', { name: 'Back' })).toBeDisabled();
     });
-});
 
-test.describe('Virtual field behavior', () => {
-    test.beforeEach(async ({ page }) => {
+    test('should navigate back to first step from review using handleGoto', async ({ page }) => {
         await page.goto('/');
+
+        await page.locator('input[name="name"]').fill('Order Test');
+        await page.locator('input[name="age"]').fill('40');
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await page.waitForTimeout(2500);
+
+        await page.locator('input[name="telephone"]').fill('999-8888');
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await page.waitForTimeout(2500);
+
+        await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+
+        await page.getByRole('button', { name: 'Reset' }).click();
+
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.locator('input[name="name"]')).toHaveValue('Order Test');
     });
 
-    test('should not deregister fields when virtual parent hides', async ({
-        page,
-    }) => {
-        await page.locator('input[name="name"]').fill('Virtual Test');
-        await page.locator('input[name="age"]').fill('42');
+    test('should show validation error and stay on step when validation fails', async ({ page }) => {
+        await page.goto('/');
 
         await page.getByRole('button', { name: 'Next' }).click();
-        await expect(
-            page.getByRole('heading', { name: 'Contact Details' }),
-        ).toBeVisible();
 
-        await page.getByRole('button', { name: 'Back' }).click();
-        await expect(
-            page.getByRole('heading', { name: 'Personal Information' }),
-        ).toBeVisible();
+        await page.waitForTimeout(2500);
 
-        await expect(page.locator('input[name="name"]')).toHaveValue(
-            'Virtual Test',
-        );
-        await expect(page.locator('input[name="age"]')).toHaveValue('42');
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.getByText('Name is required')).toBeVisible();
+
+        await page.locator('input[name="name"]').fill('Valid Name');
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await page.waitForTimeout(2500);
+
+        await expect(page.getByText('Age must be at least 2 characters')).toBeVisible();
     });
 
-    test('should deregister conditionally rendered fields', async ({
-        page,
-    }) => {
-        await page.locator('input[name="age"]').fill('50');
+    test('should navigate to step with validation error on submit', async ({ page }) => {
+        await page.goto('/');
 
-        await page.locator('input[name="guest"]').check();
-        await expect(page.locator('input[name="age"]')).not.toBeVisible();
+        await page.locator('input[name="name"]').fill('Test User');
+        await page.locator('input[name="age"]').fill('25');
+        await page.getByRole('button', { name: 'Next' }).click();
 
-        await page.locator('input[name="guest"]').uncheck();
-        await expect(page.locator('input[name="age"]')).toBeVisible();
-        await expect(page.locator('input[name="age"]')).toHaveValue('');
+        await page.waitForTimeout(2500);
+
+        await page.locator('input[name="telephone"]').fill('555-1234');
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await page.waitForTimeout(2500);
+
+        await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+
+        await page.getByRole('button', { name: 'Back' }).click();
+        await page.getByRole('button', { name: 'Back' }).click();
+
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await page.locator('input[name="name"]').clear();
+
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await page.waitForTimeout(2500);
+
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.getByText('Name is required')).toBeVisible();
     });
 });

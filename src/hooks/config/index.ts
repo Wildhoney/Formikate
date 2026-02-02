@@ -14,11 +14,15 @@ export function useConfig<Values extends FormikValues>({
     next,
     previous,
     step,
-    stepSequence,
+    steps,
     setStep,
     setFields,
+    registerStep,
+    unregisterStep,
+    incrementStepFieldCount,
+    decrementStepFieldCount,
 }: ConfigProps<Values>): FormikateReturn<Values> {
-    const progress = useProgress({ fields, stepSequence });
+    const progress = useProgress({ steps });
 
     const refs = useRef({ next, previous });
 
@@ -31,9 +35,9 @@ export function useConfig<Values extends FormikValues>({
         () => ({
             ...form,
             step,
-            progress: [...progress].map((x) => ({
-                step: x as StepName | null,
-                current: x === step,
+            progress: progress.map((order) => ({
+                step: order as StepName | null,
+                current: order === step,
             })),
             handleNext() {
                 defer(() => refs.current.next && setStep(refs.current.next));
@@ -47,12 +51,13 @@ export function useConfig<Values extends FormikValues>({
             handleGoto(run) {
                 defer(() => setStep(run));
             },
+            isEmpty: fields.length === 0,
             isNext: next != null,
             isPrevious: previous != null,
             isVisible(name: FieldName) {
                 const field = fields.find((field) => field.name === name);
                 if (!field) return false;
-                return field.step == null ? true : field.step === step;
+                return field.stepOrder == null ? true : field.stepOrder === step;
             },
             isStep(name: StepName) {
                 return name === step;
@@ -73,10 +78,14 @@ export function useConfig<Values extends FormikValues>({
                 form,
                 step,
                 fields,
-                stepSequence,
+                steps,
                 setStep,
                 setFields,
                 currentStepIndex: current,
+                registerStep,
+                unregisterStep,
+                incrementStepFieldCount,
+                decrementStepFieldCount,
             },
         }),
         [
@@ -87,9 +96,13 @@ export function useConfig<Values extends FormikValues>({
             previous,
             progress,
             step,
-            stepSequence,
+            steps,
             setStep,
             setFields,
+            registerStep,
+            unregisterStep,
+            incrementStepFieldCount,
+            decrementStepFieldCount,
         ],
     );
 }

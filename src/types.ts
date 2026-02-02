@@ -9,9 +9,19 @@ export type FieldName = string;
 export type FormikateProps<Values extends FormikValues> = Omit<
     FormikConfig<Values>,
     'validate' | 'validationSchema'
-> & {
-    initialStep?: null | StepName;
-    stepSequence?: StepName[];
+>;
+
+export type StepRegistration = {
+    id: StepName;
+    order: number;
+    initial: boolean;
+    fieldCount: number;
+};
+
+export type StepProps = {
+    initial?: boolean;
+    order: number;
+    children: ReactNode;
 };
 
 export type FormikateReturn<Values extends FormikValues> = ReturnType<
@@ -22,6 +32,7 @@ export type FormikateReturn<Values extends FormikValues> = ReturnType<
         step: null | StepName;
         current: boolean;
     }[];
+    isEmpty: boolean;
     isNext: boolean;
     isPrevious: boolean;
     handlePrevious(): void;
@@ -35,20 +46,24 @@ export type FormikateReturn<Values extends FormikValues> = ReturnType<
         form: ReturnType<typeof useFormik<Values>>;
         step: null | StepName;
         fields: Fields;
-        stepSequence: StepName[];
+        steps: StepRegistration[];
         setStep: React.Dispatch<React.SetStateAction<StepName | null>>;
         setFields: React.Dispatch<React.SetStateAction<Fields>>;
         currentStepIndex: null | number;
+        registerStep: (step: StepRegistration, reactId: string) => void;
+        unregisterStep: (reactId: string) => void;
+        incrementStepFieldCount: (stepOrder: number) => void;
+        decrementStepFieldCount: (stepOrder: number) => void;
     };
 };
 
 export type Field<T = unknown> = {
     name: string;
-    step?: null | StepName;
+    stepOrder?: null | number;
     validate: z.ZodType<T>;
 };
 
-export type VirtualField = Pick<Field, 'step'> & {
+export type VirtualField = {
     virtual: true;
 };
 
@@ -56,7 +71,7 @@ export type Fields = Field<unknown>[];
 
 export type FieldProps<T = unknown> = (Field<T> | VirtualField) & {
     hidden?: boolean;
-    default?: T;
+    initial?: T;
     children: React.ReactNode;
 };
 

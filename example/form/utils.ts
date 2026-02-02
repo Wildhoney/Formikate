@@ -1,17 +1,29 @@
 import * as z from 'zod';
 
 export const enum Steps {
-    Name = 'name',
-    Address = 'address',
-    Review = 'review',
+    Name = 1,
+    Address = 2,
+    Review = 3,
 }
 
+export const getIndex: Record<number, number> = {
+    [Steps.Name]: 0,
+    [Steps.Address]: 1,
+    [Steps.Review]: 2,
+};
+
 export const config = {
-    initialStep: Steps.Name,
-    stepSequence: [Steps.Name, Steps.Address, Steps.Review],
     initialValues: { name: '', guest: false, age: '', telephone: '' },
     validateOnBlur: false,
     validateOnChange: false,
+};
+
+export const carouselConfig = {
+    dots: false,
+    infinite: false,
+    swipe: false,
+    draggable: false,
+    speed: 400,
 };
 
 export const schema = z.object({
