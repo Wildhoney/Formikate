@@ -1,19 +1,14 @@
 /** @jsxImportSource @emotion/react */
-import { useContext } from '../../../../src/context/index.js';
+import { useFormikContext } from 'formik';
 import type { Schema } from '../../types.js';
 import * as styles from './styles.js';
 
 export default function Name() {
-    const form = useContext<Schema>();
+    const form = useFormikContext<Schema>();
 
     return (
         <div css={styles.container}>
-            <label css={styles.label}>
-                Name
-                {form.isRequired('name') && (
-                    <span css={styles.required}>*</span>
-                )}
-            </label>
+            <label css={styles.label}>Name</label>
             <input
                 type="text"
                 {...form.getFieldProps('name')}

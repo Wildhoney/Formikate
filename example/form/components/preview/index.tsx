@@ -1,10 +1,12 @@
 /** @jsxImportSource @emotion/react */
-import { useContext } from '../../../../src/context/index.js';
+import type { Step } from '../../../../src';
 import * as styles from './styles.js';
 
-export default function Preview() {
-    const form = useContext();
+type Props = {
+    step: Step;
+};
 
+export default function Preview({ step }: Props) {
     const stepTitles: Record<string, string> = {
         name: 'Personal Information',
         address: 'Contact Details',
@@ -13,7 +15,7 @@ export default function Preview() {
 
     return (
         <h1 css={styles.title}>
-            {stepTitles[form.step as string] || 'Registration Form'}
+            {stepTitles[step as string] || 'Registration Form'}
         </h1>
     );
 }

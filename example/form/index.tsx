@@ -1,11 +1,10 @@
 /** @jsxImportSource @emotion/react */
-import { Form, Field, useForm, Step } from '../../src';
-import { ReactElement, useRef, useEffect } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import { useForm, useFields, Form, Position } from '../../src';
+import { ReactElement, useRef, useEffect, ComponentRef } from 'react';
 import { Carousel } from 'antd';
-import type { CarouselRef } from 'antd/es/carousel';
+import toast, { Toaster } from 'react-hot-toast';
 
-import { config, schema, Steps, getIndex, carouselConfig } from './utils.js';
+import { config, fields } from './utils.js';
 import * as styles from './styles.js';
 
 import type { Schema } from './types.js';
@@ -19,100 +18,76 @@ import Review from './components/review/index.js';
 import Telephone from './components/telephone/index.js';
 
 export default function Details(): ReactElement {
-    const carousel = useRef<CarouselRef>(null);
+    const carousel = useRef<ComponentRef<typeof Carousel>>(null);
 
-    const form = useForm({
+    const form = useForm<Schema>({
         ...config,
+        fields,
         async onSubmit(values: Schema) {
             await new Promise((f) => setTimeout(f, 2_000));
-            if (!form.isStep(Steps.Review)) {
-                form.handleNext();
-            } else {
+            if (!form.status.progress.last)
+                return void form.status.navigate.to(Position.Next);
+            else {
                 console.log('Submitting', values);
-                toast.success('Form submitted successfully!', {
-                    duration: 4000,
+
+                return void toast.success('Form submitted successfully!', {
+                    duration: 4_000,
                     position: 'top-center',
                 });
             }
         },
     });
 
-    
+    useFields(form, () => ({
+        steps: ['name', 'address', 'review'],
+        fields: {
+            ...fields,
+            age: {
+                ...fields.age,
+                active: form.values.guest === false,
+            },
+            telephone: {
+                ...fields.telephone,
+                active: form.values.guest === false,
+            },
+        },
+    }));
 
     useEffect(() => {
-        if (form.step !== null && carousel.current) {
-            const index = getIndex[form.step];
-            if (index !== undefined) {
-                carousel.current.goTo(index);
-            }
-        }
-    }, [form.step]);
+        if (carousel.current)
+            carousel.current.goTo(form.status.progress.position);
+    }, [form.status.progress.position]);
 
     return (
-        <Form controller={form}>
-            <Toaster toastOptions={styles.toast} />
-            
+        <Form value={form}>
             <div css={styles.container}>
                 <div css={styles.formSection}>
                     <form onSubmit={form.handleSubmit}>
-                        <Preview />
+                        <Preview step={form.status.progress.current} />
 
                         <Carousel
                             ref={carousel}
-                            {...carouselConfig}
+                            {...config.carousel}
                             css={styles.carousel}
                         >
                             <div>
-                                <Step initial order={Steps.Name}>
-                                    <Field
-                                        name="name"
-                                        initial=""
-                                        validate={schema.shape.name}
-                                    >
-                                        <Name />
-                                    </Field>
-
-                                    <Field
-                                        name="guest"
-                                        validate={schema.shape.guest}
-                                    >
-                                        <Guest />
-                                    </Field>
-
-                                    {form.values.guest === false && (
-                                        <Field
-                                            name="age"
-                                            validate={schema.shape.age}
-                                        >
-                                            <Age />
-                                        </Field>
-                                    )}
-                                </Step>
+                                <Name />
+                                <Guest />
+                                {form.status.field.age.exists() && <Age />}
                             </div>
 
                             <div>
-                                <Step order={Steps.Address}>
-                                    {form.values.guest === false && (
-                                        <Field
-                                            name="telephone"
-                                            validate={schema.shape.telephone}
-                                        >
-                                            <Telephone />
-                                        </Field>
-                                    )}
-                                </Step>
+                                {form.status.field.telephone.exists() && (
+                                    <Telephone />
+                                )}
                             </div>
 
                             <div>
-                                <Step order={Steps.Review}>
-                                    <Field virtual>
-                                        <Review />
-                                    </Field>
-                                </Step>
+                                <Review />
                             </div>
                         </Carousel>
 
-                        <Buttons />
+                        <Buttons fields={form.status} />
                     </form>
                 </div>
 
@@ -121,12 +96,14 @@ export default function Details(): ReactElement {
 
                     <div css={styles.section}>
                         <h4 css={styles.subtitle}>Current Step</h4>
-                        <div css={styles.current}>{form.step}</div>
+                        <div css={styles.current}>
+                            {form.status.progress.current}
+                        </div>
                     </div>
 
                     <div css={styles.section}>
                         <h4 css={styles.subtitle}>Progress</h4>
-                        <Progress />
+                        <Progress fields={form.status} />
                     </div>
 
                     <div>
@@ -137,6 +114,8 @@ export default function Details(): ReactElement {
                     </div>
                 </div>
             </div>
+
+            <Toaster toastOptions={styles.toast} />
         </Form>
     );
 }

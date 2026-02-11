@@ -4,17 +4,15 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.3.17](https://github.com/Wildhoney/Schematik/compare/v0.3.16...v0.3.17) (2026-02-02)
 
-
 ### Features
 
-* refactor to keep the components mounted ([8631812](https://github.com/Wildhoney/Schematik/commit/8631812eb5efbc28320953e01cd5e3150eb5c88b))
+- refactor to keep the components mounted ([8631812](https://github.com/Wildhoney/Schematik/commit/8631812eb5efbc28320953e01cd5e3150eb5c88b))
 
 ## [0.3.16](https://github.com/Wildhoney/Schematik/compare/v0.3.15...v0.3.16) (2025-12-15)
 
-
 ### Features
 
-* added isStep method ([7fe1d3c](https://github.com/Wildhoney/Schematik/commit/7fe1d3cbc16e53aa24cf9079fe13dc0be94896e6))
+- added isStep method ([7fe1d3c](https://github.com/Wildhoney/Schematik/commit/7fe1d3cbc16e53aa24cf9079fe13dc0be94896e6))
 
 ## [0.3.15](https://github.com/Wildhoney/Schematik/compare/v0.3.14...v0.3.15) (2025-12-15)
 

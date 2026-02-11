@@ -1,17 +1,24 @@
 /** @jsxImportSource @emotion/react */
-import { useContext } from '../../../../src/context/index.js';
-import { Steps } from '../../utils.js';
+import { useFormikContext } from 'formik';
+import { Position, type Status } from '../../../../src';
 import * as styles from './styles.js';
 
-export default function Buttons() {
-    const form = useContext();
+type Props = {
+    fields: Status;
+};
+
+export default function Buttons({ fields }: Props) {
+    const form = useFormikContext();
 
     return (
         <section css={styles.container}>
             <button
                 type="button"
-                disabled={!form.isPrevious || form.isSubmitting}
-                onClick={form.handlePrevious}
+                disabled={
+                    !fields.navigate.exists(Position.Previous) ||
+                    form.isSubmitting
+                }
+                onClick={() => fields.navigate.to(Position.Previous)}
                 css={styles.back}
             >
                 Back
@@ -22,13 +29,13 @@ export default function Buttons() {
                 disabled={form.isSubmitting}
                 css={styles.submit}
             >
-                {form.isStep(Steps.Review) ? 'Submit' : 'Next'}
+                {fields.progress.last ? 'Submit' : 'Next'}
             </button>
 
             <button
                 type="button"
                 disabled={form.isSubmitting}
-                onClick={() => form.handleGoto(Steps.Name)}
+                onClick={() => fields.navigate.to(Position.First)}
                 css={styles.reset}
             >
                 Reset

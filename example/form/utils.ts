@@ -1,29 +1,15 @@
 import * as z from 'zod';
 
-export const enum Steps {
-    Name = 1,
-    Address = 2,
-    Review = 3,
-}
-
-export const getIndex: Record<number, number> = {
-    [Steps.Name]: 0,
-    [Steps.Address]: 1,
-    [Steps.Review]: 2,
-};
-
 export const config = {
-    initialValues: { name: '', guest: false, age: '', telephone: '' },
     validateOnBlur: false,
     validateOnChange: false,
-};
-
-export const carouselConfig = {
-    dots: false,
-    infinite: false,
-    swipe: false,
-    draggable: false,
-    speed: 400,
+    carousel: {
+        dots: false,
+        infinite: false,
+        swipe: false,
+        draggable: false,
+        speed: 400,
+    },
 };
 
 export const schema = z.object({
@@ -50,3 +36,18 @@ export const schema = z.object({
             .max(15, 'Telephone must be less than 15 characters'),
     ),
 });
+
+export const fields = {
+    name: { step: 'name' as const, validate: schema.shape.name, value: '' },
+    guest: {
+        step: 'name' as const,
+        validate: schema.shape.guest,
+        value: false,
+    },
+    age: { step: 'name' as const, validate: schema.shape.age, value: '' },
+    telephone: {
+        step: 'address' as const,
+        validate: schema.shape.telephone,
+        value: '',
+    },
+};

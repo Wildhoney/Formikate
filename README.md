@@ -8,211 +8,220 @@ Lightweight form builder for React that lets you dynamically render form fields 
 
 ## Features
 
-- Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod)
-- Declarative multi-step forms using the `<Step>` component
-- Fields that get hidden are reset using the `initialValues` object
-- Steps without fields are automatically skipped during navigation
-- Navigates to the earliest step that contains a validation error on submit
+- Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod) validation schemas
+- Declarative multi-step forms via `useFields` configuration
+- Inactive fields are automatically reset to their default values
+- Steps without active fields are automatically skipped during navigation
+- Per-step validation &mdash; only fields on the current step (or earlier) are validated on submit
 
 ## Getting started
 
-Begin by defining your validation schema and step order:
+Begin by defining your validation schema and field descriptors:
 
 ```tsx
-export const enum Steps {
-    Personal = 1,
-    Delivery = 2,
-    Review = 3,
-}
+import * as z from 'zod';
 
 export const schema = z.object({
-    name: z.string(),
-    address: z.string(),
+    name: z.string().min(1, 'Name is required'),
+    address: z.string().min(1, 'Address is required'),
     guest: z.boolean(),
 });
+
+export type Schema = z.infer<typeof schema>;
+
+export const fields = {
+    name: { step: 'personal' as const, validate: schema.shape.name, value: '' },
+    address: {
+        step: 'delivery' as const,
+        validate: schema.shape.address,
+        value: '',
+    },
+    guest: {
+        step: 'personal' as const,
+        validate: schema.shape.guest,
+        value: false,
+    },
+};
 ```
 
-Next import the `useForm` hook &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik):
+Import `useForm` &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik) (except `validate`, `validationSchema`, and `initialValues` which are handled internally). Initial values are derived from each field's `value` property:
 
 ```tsx
-const form = useForm({
+import { useForm, useFields, Position } from 'formikate';
+import { fields } from './utils';
+
+const form = useForm<Schema>({
+    fields,
     validateOnBlur: false,
     validateOnChange: false,
-    initialValues: { name: '', address: '', guest: false },
-    onSubmit(values: Schema) {
-        console.log(values);
+    onSubmit(values) {
+        if (!form.status.progress.last)
+            return void form.status.navigate.to(Position.Next);
+        console.log('Submitting', values);
     },
 });
 ```
 
-You can now use `form` to access [all of the usual](https://formik.org/docs/api/formik#props-1) Formik properties such as `form.values` and `form.errors`.
+You can use `form` to access [all of the usual](https://formik.org/docs/api/formik#props-1) Formik properties such as `form.values` and `form.errors`.
 
-## Step Component
+## Defining Steps and Fields
 
-Multi-step forms are created using the `<Step>` component. Each step defines its order in the sequence and which fields belong to it:
+Use `useFields` to declare the step structure and field configuration. The `step` property on each field is strongly typed &mdash; it must match one of the identifiers in the `steps` array:
 
 ```tsx
-<Form controller={form}>
-    <form onSubmit={form.handleSubmit}>
-        <Step initial order={Steps.Personal}>
-            <Field name="name" validate={schema.shape.name}>
-                <input type="text" {...form.getFieldProps('name')} />
-            </Field>
-        </Step>
-
-        <Step order={Steps.Delivery}>
-            <Field name="address" validate={schema.shape.address}>
-                <input type="text" {...form.getFieldProps('address')} />
-            </Field>
-        </Step>
-    </form>
-</Form>
+useFields(form, () => ({
+    steps: ['personal', 'delivery', 'review'],
+    fields: {
+        ...fields,
+        address: {
+            ...fields.address,
+            active: form.values.guest === false,
+        },
+    },
+}));
 ```
 
-### Step Props
+### Config Shape
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `order` | `number` | The step's position in the sequence (lower numbers come first) |
-| `initial` | `boolean` | Whether this is the starting step (default: `false`) |
+| Property | Type                             | Description                               |
+| -------- | -------------------------------- | ----------------------------------------- |
+| `steps`  | `(string \| number \| symbol)[]` | Ordered list of step identifiers          |
+| `fields` | `Record<string, FieldConfig>`    | Map of field names to their configuration |
 
-Steps are automatically sorted by their `order` value. You can use any numeric values including negative numbers or `Infinity`.
+### Field Config
+
+| Property   | Type                         | Description                                                                                                     |
+| ---------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `step`     | `string \| number \| symbol` | Which step this field belongs to &mdash; must match one of the identifiers in `steps`                           |
+| `validate` | `ZodType`                    | Zod schema used for validation                                                                                  |
+| `value`    | `unknown`                    | Default/reset value for the field &mdash; also used as the initial value when passed to `useForm`               |
+| `active`   | `boolean?`                   | Whether the field is active (default `true`). Inactive fields are excluded from validation and reset to `value` |
 
 ### Automatic Step Skipping
 
-Steps that contain no `<Field>` children are automatically skipped during navigation. This allows for dynamic multi-step forms:
+Steps where all fields have `active: false` are automatically skipped during navigation:
 
 ```tsx
-<Step order={Steps.Delivery}>
-    {form.values.guest && (
-        <Field name="address" validate={schema.shape.address}>
+useFields(form, () => ({
+    steps: ['personal', 'delivery', 'review'],
+    fields: {
+        ...fields,
+        address: {
+            ...fields.address,
+            active: form.values.guest === false,
+        },
+    },
+}));
+```
+
+When `guest` is `true`, the `address` field is inactive, so the delivery step is skipped.
+
+## Status
+
+After calling `useFields`, the computed state is available on `form.status`:
+
+```tsx
+form.status.empty; // boolean — true when no fields/steps are configured
+form.status.field; // Record<string, { exists(), required, optional }>
+form.status.progress; // step progression state
+form.status.navigate; // navigation controls
+```
+
+### Field State
+
+```tsx
+form.status.field.name.exists(); // true if the field is active
+form.status.field.name.required; // true if the Zod schema rejects `undefined`
+form.status.field.name.optional; // inverse of required
+```
+
+### Progress
+
+```tsx
+form.status.progress.current; // identifier of the current step
+form.status.progress.position; // zero-based index within visible steps
+form.status.progress.total; // total number of visible steps
+form.status.progress.first; // whether on the first visible step
+form.status.progress.last; // whether on the last visible step
+form.status.progress.steps; // array of { id, index } for visible steps
+form.status.progress.step; // map of step id → { visible, current }
+```
+
+### Navigation
+
+```tsx
+import { Position } from 'formikate';
+
+form.status.navigate.to(Position.Next); // go to next step
+form.status.navigate.to(Position.Previous); // go to previous step
+form.status.navigate.to(Position.First); // go to first step
+form.status.navigate.to(Position.Last); // go to last step
+form.status.navigate.to('review'); // go to a specific step by id
+
+form.status.navigate.exists(Position.Next); // true if a next step exists
+form.status.navigate.exists(Position.Previous); // true if a previous step exists
+form.status.navigate.exists('review'); // true if a specific step is reachable
+```
+
+## Rendering
+
+Use Formikate's `Form` component to provide the form to child components:
+
+```tsx
+import { Form, Position } from 'formikate';
+
+<Form value={form}>
+    <form onSubmit={form.handleSubmit}>
+        {form.status.field.name.exists() && (
+            <input type="text" {...form.getFieldProps('name')} />
+        )}
+
+        {form.status.field.address.exists() && (
             <input type="text" {...form.getFieldProps('address')} />
-        </Field>
-    )}
-</Step>
+        )}
+
+        <button
+            type="button"
+            disabled={!form.status.navigate.exists(Position.Previous)}
+            onClick={() => form.status.navigate.to(Position.Previous)}
+        >
+            Back
+        </button>
+
+        <button type="submit">
+            {form.status.progress.last ? 'Submit' : 'Next'}
+        </button>
+    </form>
+</Form>;
 ```
 
-When `guest` is `false`, the Delivery step has no fields and will be skipped when navigating.
+### Accessing Form in Child Components
 
-## Field Component
-
-The `<Field>` component registers form fields with Formikate:
+Use the `useFormContext` hook in child components to access the form with properly typed `status`:
 
 ```tsx
-<Field name="name" validate={schema.shape.name}>
-    <input type="text" {...form.getFieldProps('name')} />
-</Field>
-```
+import { useFormContext } from 'formikate';
+import type { Schema } from './types';
 
-### Field Props
+function NameField() {
+    const form = useFormContext<Schema>();
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `name` | `string` | The field name (must match a key in `initialValues`) |
-| `validate` | `ZodType` | Zod schema for validation |
-| `initial` | `any` | Initial value when field mounts (optional) |
-| `hidden` | `boolean` | Hide the field but retain its value (default: `false`) |
-| `virtual` | `boolean` | No validation, just marks a step as having content |
+    if (!form.status.field.name.exists()) return null;
 
-### Virtual Fields
-
-Use `virtual` for steps that display data but don't collect input:
-
-```tsx
-<Step order={Steps.Review}>
-    <Field virtual>
-        <ul>
-            <li>Name: {form.values.name}</li>
-            <li>Address: {form.values.address}</li>
-        </ul>
-    </Field>
-</Step>
-```
-
-## Navigation
-
-Control form navigation using the form controller:
-
-```tsx
-// In your onSubmit handler
-onSubmit(values: Schema) {
-    if (form.isStep(Steps.Review)) {
-        console.log('Submitting', values);
-    } else {
-        form.handleNext();
-    }
+    return <input type="text" {...form.getFieldProps('name')} />;
 }
-```
-
-### Navigation Methods
-
-| Method | Description |
-|--------|-------------|
-| `form.handleNext()` | Navigate to the next step |
-| `form.handlePrevious()` | Navigate to the previous step |
-| `form.handleGoto(step)` | Navigate to a specific step |
-| `form.isStep(step)` | Check if the current step matches |
-
-### Navigation Buttons
-
-```tsx
-<button
-    type="button"
-    disabled={!form.isPrevious || form.isSubmitting}
-    onClick={form.handlePrevious}
->
-    Back
-</button>
-
-<button type="submit" disabled={form.isSubmitting}>
-    {form.isStep(Steps.Review) ? 'Submit' : 'Next'}
-</button>
-```
-
-## Progress Indicator
-
-Display step progress using `form.progress`:
-
-```tsx
-<ul>
-    {form.progress.map((progress) => (
-        <li key={progress.step} className={progress.current ? 'active' : ''}>
-            Step {progress.step}
-        </li>
-    ))}
-</ul>
 ```
 
 ## Empty State
 
-When all fields are conditionally hidden, use `form.isEmpty` to render a fallback:
+When all fields are inactive, `form.status.empty` is `true`:
 
 ```tsx
-<Form controller={form}>
-    {form.isEmpty ? (
+{
+    form.status.empty ? (
         <p>No fields available</p>
     ) : (
-        <form onSubmit={form.handleSubmit}>
-            {showFields && (
-                <Step initial order={1}>
-                    <Field name="name" validate={schema.shape.name}>
-                        <input type="text" {...form.getFieldProps('name')} />
-                    </Field>
-                </Step>
-            )}
-        </form>
-    )}
-</Form>
+        <form onSubmit={form.handleSubmit}>{/* ... */}</form>
+    );
+}
 ```
-
-## Utility Methods
-
-| Method | Description |
-|--------|-------------|
-| `form.isEmpty` | Whether the form has no registered fields |
-| `form.isVisible(name)` | Check if a field is currently rendered |
-| `form.isRequired(name)` | Check if a field is required (based on Zod schema) |
-| `form.isOptional(name)` | Check if a field is optional |
-| `form.step` | Current step order value |
-| `form.isPrevious` | Whether a previous step exists |
-| `form.isNext` | Whether a next step exists |
