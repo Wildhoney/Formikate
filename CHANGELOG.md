@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.18](https://github.com/Wildhoney/Schematik/compare/v0.3.17...v0.3.18) (2026-02-11)
+
+
+### Features
+
+* derive initialValues from field descriptors, add Form/useFormContext, strongly type Config steps ([3779d6b](https://github.com/Wildhoney/Schematik/commit/3779d6b040dd2eac7a127636abec89a98fac41c6))
+
 ## [0.3.17](https://github.com/Wildhoney/Schematik/compare/v0.3.16...v0.3.17) (2026-02-02)
 
 ### Features
