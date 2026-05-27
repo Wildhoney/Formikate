@@ -17,12 +17,13 @@ export { useFields } from './hooks/fields/index.js';
 export type {
     Status,
     Config,
-    Field,
+    Result,
+    Mode,
     Step,
     Navigation,
     Progress,
 } from './hooks/fields/index.js';
-export { Position } from './hooks/fields/index.js';
+export { Position, Field } from './hooks/fields/index.js';
 
 /**
  * Provides the Formikate form instance to child components via Formik's context.

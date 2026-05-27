@@ -1,5 +1,7 @@
 import * as z from 'zod';
 
+import { Field } from '../../src';
+
 export const config = {
     validateOnBlur: false,
     validateOnChange: false,
@@ -35,6 +37,7 @@ export const schema = z.object({
             .min(1, 'Telephone is required')
             .max(15, 'Telephone must be less than 15 characters'),
     ),
+    csrfToken: z.string().min(1, 'CSRF token is required'),
 });
 
 export const fields = {
@@ -49,5 +52,11 @@ export const fields = {
         step: 'address' as const,
         validate: schema.shape.telephone,
         value: '',
+    },
+    csrfToken: {
+        step: 'name' as const,
+        mode: Field.Hidden,
+        validate: schema.shape.csrfToken,
+        value: 'csrf-demo-token',
     },
 };

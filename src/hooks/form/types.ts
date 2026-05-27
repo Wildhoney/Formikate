@@ -1,4 +1,9 @@
-import type { FormikConfig, FormikValues, useFormik } from 'formik';
+import type {
+    FormikConfig,
+    FormikErrors,
+    FormikValues,
+    useFormik,
+} from 'formik';
 import type { config } from './utils.js';
 import type { Status as FieldsStatus } from '../fields/types.js';
 
@@ -15,6 +20,13 @@ export type Props<Values extends FormikValues> = Omit<
     fields: {
         [K in keyof Values]: { value: Values[K]; [key: string]: unknown };
     };
+    /**
+     * Called when a submit attempt is blocked by validation errors. Receives the
+     * full Formik error map, including errors on hidden steps that the current UI
+     * may not be surfacing. Useful for toasting a message, navigating to the
+     * offending step, or logging.
+     */
+    onInvalid?: (errors: FormikErrors<Values>) => void;
 };
 
 /**

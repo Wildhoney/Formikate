@@ -127,6 +127,17 @@ test.describe('Multi-step form', () => {
         ).toBeVisible();
     });
 
+    test('does not fire onInvalid for visible-field validation errors', async ({
+        page,
+    }) => {
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await expect(page.getByText('Name is required')).toBeVisible();
+        await expect(
+            page.getByText(/Cannot submit — invalid:/),
+        ).not.toBeVisible();
+    });
+
     test('clears validation errors after fixing fields', async ({ page }) => {
         const next = page.getByRole('button', { name: 'Next' });
         await next.click();

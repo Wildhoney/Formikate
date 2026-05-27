@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { useForm, useFields, Form, Position } from '../../src';
+import { useForm, useFields, Form, Position, Field } from '../../src';
 import { ReactElement, useRef, useEffect, ComponentRef } from 'react';
 import { Carousel } from 'antd';
 import toast, { Toaster } from 'react-hot-toast';
@@ -36,6 +36,13 @@ export default function Details(): ReactElement {
                 });
             }
         },
+        onInvalid(errors) {
+            const fields = Object.keys(errors).join(', ');
+            toast.error(`Cannot submit — invalid: ${fields}`, {
+                duration: 4_000,
+                position: 'top-center',
+            });
+        },
     });
 
     useFields(form, () => ({
@@ -44,11 +51,11 @@ export default function Details(): ReactElement {
             ...fields,
             age: {
                 ...fields.age,
-                active: form.values.guest === false,
+                mode: form.values.guest ? null : Field.Input,
             },
             telephone: {
                 ...fields.telephone,
-                active: form.values.guest === false,
+                mode: form.values.guest ? null : Field.Input,
             },
         },
     }));

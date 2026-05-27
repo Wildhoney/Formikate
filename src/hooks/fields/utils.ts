@@ -1,7 +1,12 @@
 import { toFormikValidate } from 'zod-formik-adapter';
 import * as z from 'zod';
-import type { Config, Field, Status, Step } from './types.js';
-import { Position } from './types.js';
+import type { Config, Mode, Result, Status, Step } from './types.js';
+import { Field, Position } from './types.js';
+
+/** Resolves a field descriptor's `mode`, defaulting to `Field.Input` when undefined. */
+export function getMode(mode: Mode | undefined): Mode {
+    return mode === undefined ? Field.Input : mode;
+}
 
 /**
  * Returns a safe default `Status` used as Formik's `initialStatus`.
@@ -29,7 +34,9 @@ export function getDefaultStatus(): Status {
 }
 
 /**
- * Validates form values against the Zod schemas of active fields on the current step or earlier.
+ * Validates form values against the Zod schemas of fields that are in scope for the current step.
+ * `Field.Hidden` fields are always in scope. `Field.Input` fields are in scope when their step
+ * is on or before the current step. Inactive (`null`) fields are excluded.
  * @param values - The current form values to validate.
  * @param getConfig - Factory function returning the latest `Config`.
  * @param index - The zero-based index of the current visible step.
@@ -47,19 +54,23 @@ export function validate(
             (field) => field.step === step,
         );
         if (stepFields.length === 0) return true;
-        return Object.values(config.fields).some(
-            (field) => field.active !== false && field.step === step,
+        return stepFields.some(
+            (field) => getMode(field.mode) === Field.Input,
         );
     });
 
-    const activeFields = Object.entries(config.fields).filter(([, field]) => {
-        if (field.active === false) return false;
-        const fieldStepIdx = steps.indexOf(field.step);
-        return fieldStepIdx !== -1 && fieldStepIdx <= index;
-    });
+    const includedFields = Object.entries(config.fields).filter(
+        ([, field]) => {
+            const mode = getMode(field.mode);
+            if (mode === null) return false;
+            if (mode === Field.Hidden) return true;
+            const fieldStepIdx = steps.indexOf(field.step);
+            return fieldStepIdx !== -1 && fieldStepIdx <= index;
+        },
+    );
 
     const schemaShape = Object.fromEntries(
-        activeFields.map(([name, field]) => [name, field.validate]),
+        includedFields.map(([name, field]) => [name, field.validate]),
     );
 
     return toFormikValidate(z.object(schemaShape))(values);
@@ -68,17 +79,20 @@ export function validate(
 /**
  * Computes per-field state from the field configuration and Zod schemas.
  * @param fields - The field configuration map from `Config['fields']`.
- * @returns {Record<string, Field>} A map of field names to their computed state.
+ * @returns {Record<string, Result>} A map of field names to their computed state.
  */
-export function getFieldState(fields: Config['fields']): Record<string, Field> {
-    const state: Record<string, Field> = {};
+export function getFieldState(
+    fields: Config['fields'],
+): Record<string, Result> {
+    const state: Record<string, Result> = {};
     for (const [name, field] of Object.entries(fields)) {
-        const active = field.active !== false;
+        const mode = getMode(field.mode);
         const optional = field.validate.safeParse(undefined).success;
         state[name] = {
-            exists: () => active,
+            exists: () => mode === Field.Input,
             required: !optional,
             optional,
+            mode,
         };
     }
     return state;

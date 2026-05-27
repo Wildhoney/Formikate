@@ -4,9 +4,11 @@ import type { FormikValues } from 'formik';
 import type { Formikate } from '../form/types.js';
 import { config as formikateConfig } from '../form/utils.js';
 import type { Config, Status, Step } from './types.js';
+import { Field } from './types.js';
 import {
     validate,
     getFieldState,
+    getMode,
     getProgress,
     getNavigation,
 } from './utils.js';
@@ -14,12 +16,13 @@ import {
 export type {
     Status,
     Config,
-    Field,
+    Result,
+    Mode,
     Step,
     Navigation,
     Progress,
 } from './types.js';
-export { Position } from './types.js';
+export { Position, Field } from './types.js';
 
 /**
  * Declares the form's step and field structure, computing navigation, progress,
@@ -45,7 +48,7 @@ export function useFields<Values extends FormikValues, const S extends Step>(
                 );
                 return (
                     fields.length === 0 ||
-                    fields.some((field) => field.active !== false)
+                    fields.some((field) => getMode(field.mode) === Field.Input)
                 );
             }),
         [config],
@@ -59,7 +62,7 @@ export function useFields<Values extends FormikValues, const S extends Step>(
 
     useLayoutEffect(() => {
         for (const [name, field] of Object.entries(config.fields))
-            if (field.active === false && form.values[name] !== field.value)
+            if (field.mode === null && form.values[name] !== field.value)
                 form.setFieldValue(name, field.value);
     }, [form, config.fields]);
 

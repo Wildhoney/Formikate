@@ -16,6 +16,22 @@ export const enum Position {
 }
 
 /**
+ * Field rendering and validation kinds.
+ * - `Input`: rendered with UI; validated when the field's step is on or before the current step.
+ * - `Hidden`: no UI; always validated. Errors fire `onInvalid` since the user can't recover.
+ *
+ * Combined with `null` (= inactive: not validated, value reset to default, no UI) to form the
+ * full set of values accepted by a field's `mode` property.
+ */
+export const Field = {
+    Input: 'input',
+    Hidden: 'hidden',
+} as const;
+
+/** Accepted values for a field descriptor's `mode`. `null` means inactive. */
+export type Mode = (typeof Field)[keyof typeof Field] | null;
+
+/**
  * Configuration object passed to `useFields` defining the form's step and field structure.
  * @template S - The step identifier type, inferred from the `steps` array.
  */
@@ -32,8 +48,13 @@ export type Config<S extends Step = Step> = {
             validate: z.ZodType;
             /** Default/reset value for the field. Also used as the initial value when passed to `useForm`. */
             value: unknown;
-            /** Whether the field is active (default `true`). Inactive fields are excluded from validation and reset to `value`. */
-            active?: boolean;
+            /**
+             * How the field participates in the form. Defaults to `Field.Input`.
+             * - `Field.Input`: UI rendered, validated when on/before the current step.
+             * - `Field.Hidden`: no UI, always validated; errors fire `onInvalid`.
+             * - `null`: inactive — excluded from validation and reset to `value`.
+             */
+            mode?: Mode;
         }
     >;
 };
@@ -65,13 +86,15 @@ export type Progress = {
 };
 
 /** Per-field computed state returned by `form.status.field`. */
-export type Field = {
-    /** Whether the field is active and present in the form. */
+export type Result = {
+    /** Whether the field is rendered (mode is `Field.Input`). False for hidden and inactive fields. */
     exists(): boolean;
     /** Whether the Zod schema rejects `undefined` for this field. */
     required: boolean;
     /** Whether the Zod schema accepts `undefined` for this field. */
     optional: boolean;
+    /** The configured mode of this field. */
+    mode: Mode;
 };
 
 /** The computed state written to `form.status` by `useFields`. */
@@ -79,7 +102,7 @@ export type Status = {
     /** Whether the form has no fields and no steps configured. */
     empty: boolean;
     /** Map of field names to their computed state. */
-    field: Record<string, Field>;
+    field: Record<string, Result>;
     /** Step progression state. */
     progress: Progress;
     /** Step navigation controls. */
