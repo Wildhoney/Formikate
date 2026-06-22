@@ -30,7 +30,9 @@ describe('Field mode predicates', () => {
         });
 
         expect(result.current.status.field.name.mode(Mode.Attached)).toBe(true);
-        expect(result.current.status.field.name.mode(Mode.Detached)).toBe(false);
+        expect(result.current.status.field.name.mode(Mode.Detached)).toBe(
+            false,
+        );
         expect(result.current.status.field.name.hidden()).toBe(false);
         expect(result.current.status.field.name.visible()).toBe(true);
     });
@@ -60,8 +62,12 @@ describe('Field mode predicates', () => {
             },
         });
 
-        expect(result.current.status.field.absent.mode(Mode.Detached)).toBe(true);
-        expect(result.current.status.field.absent.mode(Mode.Attached)).toBe(false);
+        expect(result.current.status.field.absent.mode(Mode.Detached)).toBe(
+            true,
+        );
+        expect(result.current.status.field.absent.mode(Mode.Attached)).toBe(
+            false,
+        );
         expect(result.current.status.field.absent.visible()).toBe(false);
     });
 
@@ -205,17 +211,23 @@ describe('Navigation', () => {
         const { result } = setup(threeFields, threeSteps);
 
         expect(result.current.status.progress.current()).toBe('first');
-        expect(result.current.status.navigate.possible(Cursor.Previous)).toBe(false);
+        expect(result.current.status.navigate.possible(Cursor.Previous)).toBe(
+            false,
+        );
         expect(result.current.status.navigate.possible(Cursor.Next)).toBe(true);
 
         act(() => result.current.status.navigate.to(Cursor.Next));
         expect(result.current.status.progress.current()).toBe('second');
-        expect(result.current.status.navigate.possible(Cursor.Previous)).toBe(true);
+        expect(result.current.status.navigate.possible(Cursor.Previous)).toBe(
+            true,
+        );
         expect(result.current.status.navigate.possible(Cursor.Next)).toBe(true);
 
         act(() => result.current.status.navigate.to(Cursor.Next));
         expect(result.current.status.progress.current()).toBe('third');
-        expect(result.current.status.navigate.possible(Cursor.Next)).toBe(false);
+        expect(result.current.status.navigate.possible(Cursor.Next)).toBe(
+            false,
+        );
     });
 
     it('to(Cursor.Previous) moves back one step', () => {
@@ -249,7 +261,9 @@ describe('Navigation', () => {
         const { result } = setup(threeFields, threeSteps);
 
         expect(result.current.status.navigate.possible('second')).toBe(true);
-        expect(result.current.status.navigate.possible('nonexistent')).toBe(false);
+        expect(result.current.status.navigate.possible('nonexistent')).toBe(
+            false,
+        );
     });
 
     it('skips hidden and detached steps', () => {

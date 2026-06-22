@@ -30,8 +30,7 @@ export function getStepMode(step: Step, fields: Config['fields']): Mode {
  */
 export function getStepHidden(step: Step, fields: Config['fields']): boolean {
     const attached = Object.values(fields).filter(
-        (field) =>
-            field.step === step && getMode(field.mode) === Mode.Attached,
+        (field) => field.step === step && getMode(field.mode) === Mode.Attached,
     );
     if (attached.length === 0) return false;
     return attached.every((field) => field.hidden === true);

@@ -97,12 +97,12 @@ useFields(form, () => ({
 
 ### Field Config
 
-| Property   | Type                         | Description                                                                                                                                                       |
-| ---------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `step`     | `string \| number \| symbol` | Which step this field belongs to &mdash; must match one of the identifiers in `steps`                                                                             |
-| `validate` | `ZodType`                    | Zod schema used for validation                                                                                                                                    |
-| `value`    | `unknown`                    | Default/reset value &mdash; also used as the initial value when passed to `useForm`                                                                               |
-| `mode`     | `Mode?`                      | `Mode.Attached` (default) — the field participates in the form; `Mode.Detached` — the field is excluded from validation and reset to `value`                      |
+| Property   | Type                         | Description                                                                                                                                                                                   |
+| ---------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `step`     | `string \| number \| symbol` | Which step this field belongs to &mdash; must match one of the identifiers in `steps`                                                                                                         |
+| `validate` | `ZodType`                    | Zod schema used for validation                                                                                                                                                                |
+| `value`    | `unknown`                    | Default/reset value &mdash; also used as the initial value when passed to `useForm`                                                                                                           |
+| `mode`     | `Mode?`                      | `Mode.Attached` (default) — the field participates in the form; `Mode.Detached` — the field is excluded from validation and reset to `value`                                                  |
 | `hidden`   | `boolean?`                   | When `true` on an `Attached` field, the field is not rendered but its value is still submitted and validated on every submit attempt (firing `onInvalid` on failure). Ignored when `Detached` |
 
 ### Step Mode
@@ -139,11 +139,11 @@ When `guest` is `true`, the `address` field becomes `Mode.Detached`, so the deli
 After calling `useFields`, the computed state is available on `form.status`. All accessors are functions for consistency:
 
 ```tsx
-form.status.empty;     // boolean — true when no fields/steps are configured
-form.status.field;     // Record<string, Result>
-form.status.step;      // Record<Step, StepResult>
-form.status.progress;  // step progression
-form.status.navigate;  // navigation controls
+form.status.empty; // boolean — true when no fields/steps are configured
+form.status.field; // Record<string, Result>
+form.status.step; // Record<Step, StepResult>
+form.status.progress; // step progression
+form.status.navigate; // navigation controls
 ```
 
 ### Field State
@@ -151,10 +151,10 @@ form.status.navigate;  // navigation controls
 ```tsx
 form.status.field.name.mode(Mode.Attached); // true when the field is in the form
 form.status.field.name.mode(Mode.Detached); // true when the field is excluded
-form.status.field.name.hidden();            // true when attached but flagged hidden
-form.status.field.name.visible();           // true when attached and not hidden (i.e. should render)
-form.status.field.name.required();          // true if the Zod schema rejects `undefined`
-form.status.field.name.optional();          // inverse of required()
+form.status.field.name.hidden(); // true when attached but flagged hidden
+form.status.field.name.visible(); // true when attached and not hidden (i.e. should render)
+form.status.field.name.required(); // true if the Zod schema rejects `undefined`
+form.status.field.name.optional(); // inverse of required()
 ```
 
 ### Step State
@@ -162,21 +162,21 @@ form.status.field.name.optional();          // inverse of required()
 ```tsx
 form.status.step.personal.mode(Mode.Attached); // true when this step is in the navigation flow
 form.status.step.personal.mode(Mode.Detached); // true when the step is fully absent
-form.status.step.personal.hidden();            // true when every attached field is hidden
-form.status.step.personal.visible();           // true when the step has at least one non-hidden field
-form.status.step.personal.active();            // true when this is the current step
-form.status.step.personal.fields();            // array of visible attached field names on this step
+form.status.step.personal.hidden(); // true when every attached field is hidden
+form.status.step.personal.visible(); // true when the step has at least one non-hidden field
+form.status.step.personal.active(); // true when this is the current step
+form.status.step.personal.fields(); // array of visible attached field names on this step
 ```
 
 ### Progress
 
 ```tsx
-form.status.progress.current();  // identifier of the current step
+form.status.progress.current(); // identifier of the current step
 form.status.progress.position(); // zero-based index within visible steps
-form.status.progress.total();    // total number of visible steps
-form.status.progress.first();    // whether on the first visible step
-form.status.progress.last();     // whether on the last visible step
-form.status.progress.steps();    // array of { id, index } for visible steps
+form.status.progress.total(); // total number of visible steps
+form.status.progress.first(); // whether on the first visible step
+form.status.progress.last(); // whether on the last visible step
+form.status.progress.steps(); // array of { id, index } for visible steps
 ```
 
 ### Navigation
@@ -184,17 +184,17 @@ form.status.progress.steps();    // array of { id, index } for visible steps
 ```tsx
 import { Cursor } from 'formikate';
 
-form.status.navigate.to(Cursor.Next);     // go to next step
+form.status.navigate.to(Cursor.Next); // go to next step
 form.status.navigate.to(Cursor.Previous); // go to previous step
-form.status.navigate.to(Cursor.First);    // jump to first step
-form.status.navigate.to(Cursor.Last);     // jump to last step
-form.status.navigate.to('review');          // go to a specific step by id
+form.status.navigate.to(Cursor.First); // jump to first step
+form.status.navigate.to(Cursor.Last); // jump to last step
+form.status.navigate.to('review'); // go to a specific step by id
 
-form.status.navigate.possible(Cursor.Next);     // true if a next step exists
+form.status.navigate.possible(Cursor.Next); // true if a next step exists
 form.status.navigate.possible(Cursor.Previous); // true if a previous step exists
-form.status.navigate.possible(Cursor.First);    // true if a first step exists
-form.status.navigate.possible(Cursor.Last);     // true if a last step exists
-form.status.navigate.possible('review');          // true if a specific step is reachable
+form.status.navigate.possible(Cursor.First); // true if a first step exists
+form.status.navigate.possible(Cursor.Last); // true if a last step exists
+form.status.navigate.possible('review'); // true if a specific step is reachable
 ```
 
 ## Rendering

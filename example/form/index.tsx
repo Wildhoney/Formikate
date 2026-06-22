@@ -60,10 +60,10 @@ export default function Details(): ReactElement {
         },
     }));
 
+    const position = form.status.progress.position();
     useEffect(() => {
-        if (carousel.current)
-            carousel.current.goTo(form.status.progress.position());
-    }, [form.status.progress.position()]);
+        if (carousel.current) carousel.current.goTo(position);
+    }, [position]);
 
     return (
         <Form value={form}>
@@ -81,9 +81,7 @@ export default function Details(): ReactElement {
                                 <div>
                                     <Name />
                                     <Guest />
-                                    {form.status.field.age.visible() && (
-                                        <Age />
-                                    )}
+                                    {form.status.field.age.visible() && <Age />}
                                 </div>
                             )}
 
