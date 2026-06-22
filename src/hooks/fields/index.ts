@@ -4,12 +4,15 @@ import type { FormikValues } from 'formik';
 import type { Formikate } from '../form/types.js';
 import { config as formikateConfig } from '../form/utils.js';
 import type { Config, Status, Step } from './types.js';
-import { Field } from './types.js';
+import { Mode } from './types.js';
 import {
     validate,
     getFieldState,
     getMode,
+    getStepMode,
+    getStepHidden,
     getProgress,
+    getStepState,
     getNavigation,
 } from './utils.js';
 
@@ -17,52 +20,46 @@ export type {
     Status,
     Config,
     Result,
-    Mode,
+    StepResult,
     Step,
     Navigation,
     Progress,
 } from './types.js';
-export { Position, Field } from './types.js';
+export { Mode, Cursor } from './types.js';
 
 /**
  * Declares the form's step and field structure, computing navigation, progress,
  * validation, and field visibility state. Writes the result to `form.status`.
- * @template Values - The form values shape extending `FormikValues`.
- * @template S - The step identifier type, inferred from the `steps` array in the config.
- * @param form - The `Formikate` instance returned by `useForm`.
- * @param getConfig - Factory function returning the current `Config` (steps and fields).
- * @returns {void}
  */
 export function useFields<Values extends FormikValues, const S extends Step>(
     form: Formikate<Values>,
     getConfig: () => Config<S>,
 ): void {
-    const [step, setStep] = useState<number>(0);
+    const [stepIndex, setStepIndex] = useState<number>(0);
     const config = useMemo(() => getConfig(), [getConfig]);
 
-    const steps = useMemo(
+    const visibleSteps = useMemo(
         () =>
-            config.steps.filter((step) => {
-                const fields = Object.values(config.fields).filter(
-                    (field) => field.step === step,
-                );
-                return (
-                    fields.length === 0 ||
-                    fields.some((field) => getMode(field.mode) === Field.Input)
-                );
-            }),
+            config.steps.filter(
+                (step) =>
+                    getStepMode(step, config.fields) === Mode.Attached &&
+                    !getStepHidden(step, config.fields),
+            ),
         [config],
     );
 
     const index = useMemo(
-        () => Math.min(step, Math.max(0, steps.length - 1)),
-        [step, steps],
+        () => Math.min(stepIndex, Math.max(0, visibleSteps.length - 1)),
+        [stepIndex, visibleSteps],
     );
-    const current = useMemo(() => steps[index], [steps, index]);
+    const current = useMemo(() => visibleSteps[index], [visibleSteps, index]);
 
     useLayoutEffect(() => {
         for (const [name, field] of Object.entries(config.fields))
-            if (field.mode === null && form.values[name] !== field.value)
+            if (
+                getMode(field.mode) === Mode.Detached &&
+                form.values[name] !== field.value
+            )
                 form.setFieldValue(name, field.value);
     }, [form, config.fields]);
 
@@ -79,10 +76,11 @@ export function useFields<Values extends FormikValues, const S extends Step>(
                     config.steps.length === 0 &&
                     Object.keys(config.fields).length === 0,
                 field: getFieldState(config.fields),
-                progress: getProgress(config.steps, steps, current, index),
-                navigate: getNavigation(index, steps, setStep),
+                step: getStepState(config.steps, current, config.fields),
+                progress: getProgress(visibleSteps, current, index),
+                navigate: getNavigation(index, visibleSteps, setStepIndex),
             }) satisfies Status,
-        [config, steps, current, index],
+        [config, visibleSteps, current, index],
     );
 
     // Direct mutation during render — runs before JSX evaluation. Using setStatus

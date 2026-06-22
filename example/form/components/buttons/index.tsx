@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { useFormikContext } from 'formik';
-import { Position, type Status } from '../../../../src';
+import { Cursor, type Status } from '../../../../src';
 import * as styles from './styles.js';
 
 type Props = {
@@ -15,10 +15,10 @@ export default function Buttons({ fields }: Props) {
             <button
                 type="button"
                 disabled={
-                    !fields.navigate.exists(Position.Previous) ||
+                    !fields.navigate.possible(Cursor.Previous) ||
                     form.isSubmitting
                 }
-                onClick={() => fields.navigate.to(Position.Previous)}
+                onClick={() => fields.navigate.to(Cursor.Previous)}
                 css={styles.back}
             >
                 Back
@@ -29,13 +29,13 @@ export default function Buttons({ fields }: Props) {
                 disabled={form.isSubmitting}
                 css={styles.submit}
             >
-                {fields.progress.last ? 'Submit' : 'Next'}
+                {fields.progress.last() ? 'Submit' : 'Next'}
             </button>
 
             <button
                 type="button"
                 disabled={form.isSubmitting}
-                onClick={() => fields.navigate.to(Position.First)}
+                onClick={() => fields.navigate.to(Cursor.First)}
                 css={styles.reset}
             >
                 Reset

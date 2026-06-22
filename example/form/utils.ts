@@ -1,7 +1,5 @@
 import * as z from 'zod';
 
-import { Field } from '../../src';
-
 export const config = {
     validateOnBlur: false,
     validateOnChange: false,
@@ -55,7 +53,7 @@ export const fields = {
     },
     csrfToken: {
         step: 'name' as const,
-        mode: Field.Hidden,
+        hidden: true,
         validate: schema.shape.csrfToken,
         value: 'csrf-demo-token',
     },

@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { useForm, useFields, Form, Position, Field } from '../../src';
+import { useForm, useFields, Form, Mode, Cursor } from '../../src';
 import { ReactElement, useRef, useEffect, ComponentRef } from 'react';
 import { Carousel } from 'antd';
 import toast, { Toaster } from 'react-hot-toast';
@@ -24,9 +24,9 @@ export default function Details(): ReactElement {
         ...config,
         fields,
         async onSubmit(values: Schema) {
-            await new Promise((f) => setTimeout(f, 2_000));
-            if (!form.status.progress.last)
-                return void form.status.navigate.to(Position.Next);
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+            if (!form.status.progress.last())
+                return void form.status.navigate.to(Cursor.Next);
             else {
                 console.log('Submitting', values);
 
@@ -37,8 +37,8 @@ export default function Details(): ReactElement {
             }
         },
         onInvalid(errors) {
-            const fields = Object.keys(errors).join(', ');
-            toast.error(`Cannot submit — invalid: ${fields}`, {
+            const invalidFields = Object.keys(errors).join(', ');
+            toast.error(`Cannot submit — invalid: ${invalidFields}`, {
                 duration: 4_000,
                 position: 'top-center',
             });
@@ -51,47 +51,53 @@ export default function Details(): ReactElement {
             ...fields,
             age: {
                 ...fields.age,
-                mode: form.values.guest ? null : Field.Input,
+                mode: form.values.guest ? Mode.Detached : Mode.Attached,
             },
             telephone: {
                 ...fields.telephone,
-                mode: form.values.guest ? null : Field.Input,
+                mode: form.values.guest ? Mode.Detached : Mode.Attached,
             },
         },
     }));
 
     useEffect(() => {
         if (carousel.current)
-            carousel.current.goTo(form.status.progress.position);
-    }, [form.status.progress.position]);
+            carousel.current.goTo(form.status.progress.position());
+    }, [form.status.progress.position()]);
 
     return (
         <Form value={form}>
             <div css={styles.container}>
                 <div css={styles.formSection}>
                     <form onSubmit={form.handleSubmit}>
-                        <Preview step={form.status.progress.current} />
+                        <Preview step={form.status.progress.current()} />
 
                         <Carousel
                             ref={carousel}
                             {...config.carousel}
                             css={styles.carousel}
                         >
-                            <div>
-                                <Name />
-                                <Guest />
-                                {form.status.field.age.exists() && <Age />}
-                            </div>
+                            {form.status.step.name.visible() && (
+                                <div>
+                                    <Name />
+                                    <Guest />
+                                    {form.status.field.age.visible() && (
+                                        <Age />
+                                    )}
+                                </div>
+                            )}
 
-                            <div>
-                                {form.status.field.telephone.exists() && (
+                            {form.status.step.address.visible() && (
+                                <div>
                                     <Telephone />
-                                )}
-                            </div>
+                                </div>
+                            )}
 
-                            <div>
-                                <Review />
-                            </div>
+                            {form.status.step.review.visible() && (
+                                <div>
+                                    <Review />
+                                </div>
+                            )}
                         </Carousel>
 
                         <Buttons fields={form.status} />
@@ -104,7 +110,7 @@ export default function Details(): ReactElement {
                     <div css={styles.section}>
                         <h4 css={styles.subtitle}>Current Step</h4>
                         <div css={styles.current}>
-                            {form.status.progress.current}
+                            {form.status.progress.current()}
                         </div>
                     </div>
 

@@ -4,17 +4,15 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.3.19](https://github.com/Wildhoney/Formikate/compare/v0.3.18...v0.3.19) (2026-05-27)
 
-
 ### Features
 
-* replace field.active boolean with field.mode (Input/Hidden/null) and add onInvalid callback ([7d5af5d](https://github.com/Wildhoney/Formikate/commit/7d5af5db300ed155f8af20c010120b83cabaf911))
+- replace field.active boolean with field.mode (Input/Hidden/null) and add onInvalid callback ([7d5af5d](https://github.com/Wildhoney/Formikate/commit/7d5af5db300ed155f8af20c010120b83cabaf911))
 
 ## [0.3.18](https://github.com/Wildhoney/Schematik/compare/v0.3.17...v0.3.18) (2026-02-11)
 
-
 ### Features
 
-* derive initialValues from field descriptors, add Form/useFormContext, strongly type Config steps ([3779d6b](https://github.com/Wildhoney/Schematik/commit/3779d6b040dd2eac7a127636abec89a98fac41c6))
+- derive initialValues from field descriptors, add Form/useFormContext, strongly type Config steps ([3779d6b](https://github.com/Wildhoney/Schematik/commit/3779d6b040dd2eac7a127636abec89a98fac41c6))
 
 ## [0.3.17](https://github.com/Wildhoney/Schematik/compare/v0.3.16...v0.3.17) (2026-02-02)
 

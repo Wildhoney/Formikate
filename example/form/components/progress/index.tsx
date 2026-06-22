@@ -9,10 +9,10 @@ type Props = {
 export default function Progress({ fields }: Props) {
     return (
         <div css={styles.container}>
-            {fields.progress.steps.map((step) => (
+            {fields.progress.steps().map((step) => (
                 <div
                     key={step.id}
-                    css={styles.item(fields.progress.step[step.id].current)}
+                    css={styles.item(fields.step[step.id].active())}
                 >
                     {step.id}
                 </div>
