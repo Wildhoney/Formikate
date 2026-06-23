@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.4.0](https://github.com/Wildhoney/Formikate/compare/v0.3.19...v0.4.0) (2026-06-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* function-style status accessors; Mode→Attached/Detached + hidden flag; Cursor navigation
+
+* function-style status accessors; Mode→Attached/Detached + hidden flag; Cursor navigation ([79334bb](https://github.com/Wildhoney/Formikate/commit/79334bb6296b8b3c1b1dbb3c3891d63e12e883d3))
+
 ## [0.3.19](https://github.com/Wildhoney/Formikate/compare/v0.3.18...v0.3.19) (2026-05-27)
 
 ### Features
