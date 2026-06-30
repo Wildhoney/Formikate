@@ -55,12 +55,16 @@ export function useFields<Values extends FormikValues, const S extends Step>(
     const current = useMemo(() => visibleSteps[index], [visibleSteps, index]);
 
     useLayoutEffect(() => {
-        for (const [name, field] of Object.entries(config.fields))
-            if (
-                getMode(field.mode) === Mode.Detached &&
-                form.values[name] !== field.value
-            )
+        for (const [name, field] of Object.entries(config.fields)) {
+            const mode = getMode(field.mode);
+            if (mode === Mode.Detached) {
+                if (form.values[name] !== field.value)
+                    form.setFieldValue(name, field.value);
+                continue;
+            }
+            if (!(name in form.values))
                 form.setFieldValue(name, field.value);
+        }
     }, [form, config.fields]);
 
     useLayoutEffect(() => {

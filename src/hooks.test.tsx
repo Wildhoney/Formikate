@@ -381,3 +381,39 @@ describe('Empty form', () => {
         expect(result.current.status.empty).toBe(false);
     });
 });
+
+describe('Dynamic fields', () => {
+    it('seeds Formik values when an attached field is registered after mount', async () => {
+        const { result, rerender } = renderHook(
+            ({ fields }: { fields: FieldsMap }) => {
+                const form = useForm({ fields, onSubmit: () => {} });
+                useFields(form, () => ({ steps: ['only'] as const, fields }));
+                return form;
+            },
+            { initialProps: { fields: {} as FieldsMap } },
+        );
+
+        expect(result.current.values).toEqual({});
+
+        await act(async () => {
+            rerender({
+                fields: {
+                    late: {
+                        step: 'only',
+                        validate: z.string().min(1, 'required'),
+                        value: '',
+                    },
+                },
+            });
+        });
+
+        expect(result.current.values).toEqual({ late: '' });
+
+        await act(async () => {
+            await result.current.submitForm();
+        });
+
+        expect(result.current.touched).toEqual({ late: true });
+        expect(result.current.errors).toEqual({ late: 'required' });
+    });
+});
