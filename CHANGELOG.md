@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.4.1](https://github.com/Wildhoney/Formikate/compare/v0.4.0...v0.4.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **useFields:** seed values for attached fields registered after mount ([bde7a26](https://github.com/Wildhoney/Formikate/commit/bde7a26f3d2a4187c44bd3c5ee173411955af583))
+
 ## [0.4.0](https://github.com/Wildhoney/Formikate/compare/v0.3.19...v0.4.0) (2026-06-23)
 
 
