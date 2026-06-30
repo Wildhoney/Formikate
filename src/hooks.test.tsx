@@ -387,7 +387,10 @@ describe('Dynamic fields', () => {
         const { result, rerender } = renderHook(
             ({ fields }: { fields: FieldsMap }) => {
                 const form = useForm({ fields, onSubmit: () => {} });
-                useFields(form, () => ({ steps: ['only'] as const, fields }));
+                useFields(form, () => ({
+                    steps: ['only'] as const,
+                    fields: fields as Config<'only'>['fields'],
+                }));
                 return form;
             },
             { initialProps: { fields: {} as FieldsMap } },
