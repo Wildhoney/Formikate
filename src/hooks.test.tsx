@@ -446,7 +446,10 @@ describe('onInvalid callback', () => {
             fields,
             (errors) =>
                 void calls.push(
-                    errors as Record<string, { hidden?: boolean; error: string }>,
+                    errors as Record<
+                        string,
+                        { hidden?: boolean; error: string }
+                    >,
                 ),
         );
 

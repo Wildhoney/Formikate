@@ -1,9 +1,6 @@
 import type { FormikConfig, FormikValues, useFormik } from 'formik';
 import type { config } from './utils.js';
-import type {
-    Status as FieldsStatus,
-    Descriptor,
-} from '../fields/types.js';
+import type { Status as FieldsStatus, Descriptor } from '../fields/types.js';
 
 /**
  * Formik configuration with `validate`, `validationSchema`, and `initialValues` omitted.

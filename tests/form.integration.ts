@@ -133,9 +133,7 @@ test.describe('Multi-step form', () => {
         await page.getByRole('button', { name: 'Next' }).click();
 
         await expect(page.getByText('Name is required')).toBeVisible();
-        await expect(
-            page.getByText(/Cannot submit — invalid:/),
-        ).toBeVisible();
+        await expect(page.getByText(/Cannot submit — invalid:/)).toBeVisible();
     });
 
     test('clears validation errors after fixing fields', async ({ page }) => {

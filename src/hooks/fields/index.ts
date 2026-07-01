@@ -63,8 +63,7 @@ export function useFields<Values extends FormikValues, const S extends Step>(
                     form.setFieldValue(name, field.value);
                 continue;
             }
-            if (!(name in form.values))
-                form.setFieldValue(name, field.value);
+            if (!(name in form.values)) form.setFieldValue(name, field.value);
         }
     }, [form, config.fields]);
 

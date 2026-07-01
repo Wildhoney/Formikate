@@ -2,21 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## [0.4.1](https://github.com/Wildhoney/Formikate/compare/v0.4.0...v0.4.1) (2026-06-30)
-
-
-### Bug Fixes
-
-* **useFields:** seed values for attached fields registered after mount ([bde7a26](https://github.com/Wildhoney/Formikate/commit/bde7a26f3d2a4187c44bd3c5ee173411955af583))
-
-## [0.4.0](https://github.com/Wildhoney/Formikate/compare/v0.3.19...v0.4.0) (2026-06-23)
-
+## [0.5.0](https://github.com/Wildhoney/Formikate/compare/v0.4.1...v0.5.0) (2026-07-01)
 
 ### ⚠ BREAKING CHANGES
 
-* function-style status accessors; Mode→Attached/Detached + hidden flag; Cursor navigation
+- **onInvalid:** `onInvalid` no longer receives Formik's raw error map. It now
+  receives `{ [name]: Descriptor & { error: string } }` — the raw field config
+  plus its validation message — and fires for any submit-blocked validation, not
+  just hidden-field errors. Consumers can derive the hidden-only case from the
+  payload (`Object.values(errors).some(f => f?.hidden)`).
 
-* function-style status accessors; Mode→Attached/Detached + hidden flag; Cursor navigation ([79334bb](https://github.com/Wildhoney/Formikate/commit/79334bb6296b8b3c1b1dbb3c3891d63e12e883d3))
+Also exposes the raw descriptor on `form.status.field[name].descriptor` and
+exports the `Descriptor` type so consumers can type against it directly.
+
+### Features
+
+- **onInvalid:** pass field descriptors and error messages to callback ([ff0fe8e](https://github.com/Wildhoney/Formikate/commit/ff0fe8eed2cf8fe42b5444d10b7c7c980792a41d))
+
+## [0.4.1](https://github.com/Wildhoney/Formikate/compare/v0.4.0...v0.4.1) (2026-06-30)
+
+### Bug Fixes
+
+- **useFields:** seed values for attached fields registered after mount ([bde7a26](https://github.com/Wildhoney/Formikate/commit/bde7a26f3d2a4187c44bd3c5ee173411955af583))
+
+## [0.4.0](https://github.com/Wildhoney/Formikate/compare/v0.3.19...v0.4.0) (2026-06-23)
+
+### ⚠ BREAKING CHANGES
+
+- function-style status accessors; Mode→Attached/Detached + hidden flag; Cursor navigation
+
+- function-style status accessors; Mode→Attached/Detached + hidden flag; Cursor navigation ([79334bb](https://github.com/Wildhoney/Formikate/commit/79334bb6296b8b3c1b1dbb3c3891d63e12e883d3))
 
 ## [0.3.19](https://github.com/Wildhoney/Formikate/compare/v0.3.18...v0.3.19) (2026-05-27)
 
