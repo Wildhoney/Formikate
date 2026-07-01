@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.5.0](https://github.com/Wildhoney/Formikate/compare/v0.4.1...v0.5.0) (2026-07-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **onInvalid:** `onInvalid` no longer receives Formik's raw error map. It now
+receives `{ [name]: Descriptor & { error: string } }` — the raw field config
+plus its validation message — and fires for any submit-blocked validation, not
+just hidden-field errors. Consumers can derive the hidden-only case from the
+payload (`Object.values(errors).some(f => f?.hidden)`).
+
+Also exposes the raw descriptor on `form.status.field[name].descriptor` and
+exports the `Descriptor` type so consumers can type against it directly.
+
+### Features
+
+* **onInvalid:** pass field descriptors and error messages to callback ([ff0fe8e](https://github.com/Wildhoney/Formikate/commit/ff0fe8eed2cf8fe42b5444d10b7c7c980792a41d))
+
 ## [0.4.1](https://github.com/Wildhoney/Formikate/compare/v0.4.0...v0.4.1) (2026-06-30)
 
 
