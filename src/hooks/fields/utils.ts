@@ -110,6 +110,7 @@ export function getFieldState(
             visible: () => fieldMode === Mode.Attached && !isHidden,
             required: () => !isOptional,
             optional: () => isOptional,
+            descriptor: field,
         };
     }
     return state;

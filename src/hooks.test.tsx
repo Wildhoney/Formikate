@@ -382,6 +382,132 @@ describe('Empty form', () => {
     });
 });
 
+describe('onInvalid callback', () => {
+    function setupWithInvalid<Steps extends string>(
+        fields: FieldsMap,
+        onInvalid: (errors: Record<string, unknown>) => void,
+        steps: readonly Steps[] = ['only'] as unknown as readonly Steps[],
+    ) {
+        return renderHook(() => {
+            const form = useForm({
+                fields,
+                onSubmit: () => {},
+                onInvalid,
+            });
+            useFields(form, () => ({
+                steps,
+                fields: fields as Config<Steps>['fields'],
+            }));
+            return form;
+        });
+    }
+
+    it('fires with a descriptor plus error for each invalid visible field', async () => {
+        const calls: Record<string, unknown>[] = [];
+        const fields = {
+            name: {
+                step: 'only',
+                validate: z.string().min(1, 'Name is required'),
+                value: '',
+            },
+        } satisfies FieldsMap;
+
+        const { result } = setupWithInvalid(fields, (errors) => {
+            calls.push(errors);
+        });
+
+        await act(async () => {
+            await result.current.submitForm();
+        });
+
+        expect(calls).toHaveLength(1);
+        expect(calls[0]).toEqual({
+            name: {
+                step: 'only',
+                validate: fields.name.validate,
+                value: '',
+                error: 'Name is required',
+            },
+        });
+    });
+
+    it('surfaces hidden: true on the descriptor for hidden invalid fields', async () => {
+        const calls: Record<string, { hidden?: boolean; error: string }>[] = [];
+        const fields = {
+            csrf: {
+                step: 'only',
+                validate: z.string().min(1, 'CSRF token missing'),
+                value: '',
+                hidden: true,
+            },
+        } satisfies FieldsMap;
+
+        const { result } = setupWithInvalid(
+            fields,
+            (errors) =>
+                void calls.push(
+                    errors as Record<string, { hidden?: boolean; error: string }>,
+                ),
+        );
+
+        await act(async () => {
+            await result.current.submitForm();
+        });
+
+        expect(calls).toHaveLength(1);
+        expect(calls[0].csrf.hidden).toBe(true);
+        expect(calls[0].csrf.error).toBe('CSRF token missing');
+    });
+
+    it('only includes invalid fields, not valid ones', async () => {
+        const calls: Record<string, unknown>[] = [];
+        const fields = {
+            filled: {
+                step: 'only',
+                validate: z.string().min(1, 'required'),
+                value: 'ok',
+            },
+            empty: {
+                step: 'only',
+                validate: z.string().min(1, 'required'),
+                value: '',
+            },
+        } satisfies FieldsMap;
+
+        const { result } = setupWithInvalid(fields, (errors) => {
+            calls.push(errors);
+        });
+
+        await act(async () => {
+            await result.current.submitForm();
+        });
+
+        expect(calls).toHaveLength(1);
+        expect(Object.keys(calls[0])).toEqual(['empty']);
+    });
+
+    it('does not fire when the form submits successfully', async () => {
+        const calls: Record<string, unknown>[] = [];
+        const fields = {
+            name: {
+                step: 'only',
+                validate: z.string().min(1, 'required'),
+                value: 'valid',
+            },
+        } satisfies FieldsMap;
+
+        const { result } = setupWithInvalid(fields, (errors) => {
+            calls.push(errors);
+        });
+
+        await act(async () => {
+            await result.current.submitForm();
+        });
+
+        expect(calls).toHaveLength(0);
+    });
+});
+
 describe('Dynamic fields', () => {
     it('seeds Formik values when an attached field is registered after mount', async () => {
         const { result, rerender } = renderHook(

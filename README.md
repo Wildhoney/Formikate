@@ -11,7 +11,7 @@ Lightweight form builder for React that lets you dynamically render form fields 
 - Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod) validation schemas
 - Declarative multi-step forms via `useFields` configuration
 - Fields can be set to `Mode.Detached` to be excluded from the form and reset to their default values
-- Attached fields with `hidden: true` are validated on submit but never rendered — surfaced through `onInvalid`
+- Attached fields with `hidden: true` are validated on submit but never rendered — surfaced through `onInvalid` (which fires on any submit-blocked validation and passes `meta.hidden` to identify this case)
 - Steps whose attached fields are all hidden (or whose only fields are detached) are automatically skipped during navigation
 - Per-step validation &mdash; only fields on the current step (or earlier) are validated on submit
 
@@ -103,7 +103,7 @@ useFields(form, () => ({
 | `validate` | `ZodType`                    | Zod schema used for validation                                                                                                                                                                |
 | `value`    | `unknown`                    | Default/reset value &mdash; also used as the initial value when passed to `useForm`                                                                                                           |
 | `mode`     | `Mode?`                      | `Mode.Attached` (default) — the field participates in the form; `Mode.Detached` — the field is excluded from validation and reset to `value`                                                  |
-| `hidden`   | `boolean?`                   | When `true` on an `Attached` field, the field is not rendered but its value is still submitted and validated on every submit attempt (firing `onInvalid` on failure). Ignored when `Detached` |
+| `hidden`   | `boolean?`                   | When `true` on an `Attached` field, the field is not rendered but its value is still submitted and validated on every submit attempt. Ignored when `Detached`. `onInvalid` fires on any submit-blocked validation and sets `meta.hidden = true` when at least one invalid field is hidden |
 
 ### Step Mode
 

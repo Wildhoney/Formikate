@@ -37,8 +37,13 @@ export default function Details(): ReactElement {
             }
         },
         onInvalid(errors) {
-            const invalidFields = Object.keys(errors).join(', ');
-            toast.error(`Cannot submit — invalid: ${invalidFields}`, {
+            const entries = Object.entries(errors);
+            const hasHidden = entries.some(([, field]) => field?.hidden);
+            const names = entries.map(([name]) => name).join(', ');
+            const prefix = hasHidden
+                ? 'Cannot submit — hidden field invalid'
+                : 'Cannot submit — invalid';
+            toast.error(`${prefix}: ${names}`, {
                 duration: 4_000,
                 position: 'top-center',
             });

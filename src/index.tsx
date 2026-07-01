@@ -22,6 +22,7 @@ export type {
     Step,
     Navigation,
     Progress,
+    Descriptor,
 } from './hooks/fields/index.js';
 export { Mode, Cursor } from './hooks/fields/index.js';
 

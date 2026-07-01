@@ -24,6 +24,7 @@ export type {
     Step,
     Navigation,
     Progress,
+    Descriptor,
 } from './types.js';
 export { Mode, Cursor } from './types.js';
 

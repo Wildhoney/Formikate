@@ -10,9 +10,11 @@ export type { Props, Formikate } from './types.js';
 /**
  * Thin wrapper around Formik's `useFormik` that derives initial values from field
  * descriptors and adds a validation ref so `useFields` can inject per-step validation.
- * Also invokes the optional `onInvalid` callback when a submit attempt is blocked by
- * a hidden field's validation error — the user has no UI to recover from those.
- * Errors on visible fields are surfaced inline (or handled by the consumer's nav-back logic).
+ * Also invokes the optional `onInvalid` callback whenever a submit attempt is blocked
+ * by validation, passing a map of invalid fields keyed by name where each entry is
+ * the raw `Descriptor` (from `useFields`) plus the validation `error` message —
+ * giving the consumer the `step`, `mode`, and `hidden` context needed to toast,
+ * navigate, or log.
  * @template Values - The form values shape extending `FormikValues`.
  * @param props - Formik configuration with `fields` instead of `initialValues`.
  * @returns {Formikate<Values>} The Formik instance with typed status and internal state.
@@ -51,10 +53,18 @@ export function useForm<Values extends FormikValues>(
         if (form.submitCount === lastSubmitCount.current) return;
         if (form.isSubmitting) return;
         lastSubmitCount.current = form.submitCount;
-        const hasHiddenError = Object.keys(form.errors).some(
-            (name) => form.status.field[name]?.hidden() ?? false,
-        );
-        if (hasHiddenError) onInvalid?.(form.errors);
+        const names = Object.keys(form.errors);
+        if (names.length === 0) return;
+        const payload = Object.fromEntries(
+            names.flatMap((name) => {
+                const descriptor = form.status.field[name]?.descriptor;
+                if (!descriptor) return [];
+                return [
+                    [name, { ...descriptor, error: String(form.errors[name]) }],
+                ];
+            }),
+        ) as Parameters<NonNullable<typeof onInvalid>>[0];
+        onInvalid?.(payload);
     }, [
         form.submitCount,
         form.isSubmitting,

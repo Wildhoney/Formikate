@@ -1,11 +1,9 @@
-import type {
-    FormikConfig,
-    FormikErrors,
-    FormikValues,
-    useFormik,
-} from 'formik';
+import type { FormikConfig, FormikValues, useFormik } from 'formik';
 import type { config } from './utils.js';
-import type { Status as FieldsStatus } from '../fields/types.js';
+import type {
+    Status as FieldsStatus,
+    Descriptor,
+} from '../fields/types.js';
 
 /**
  * Formik configuration with `validate`, `validationSchema`, and `initialValues` omitted.
@@ -21,12 +19,16 @@ export type Props<Values extends FormikValues> = Omit<
         [K in keyof Values]: { value: Values[K]; [key: string]: unknown };
     };
     /**
-     * Called when a submit attempt is blocked by validation errors. Receives the
-     * full Formik error map, including errors on hidden steps that the current UI
-     * may not be surfacing. Useful for toasting a message, navigating to the
-     * offending step, or logging.
+     * Called when a submit attempt is blocked by validation errors. Receives a map
+     * keyed by field name where each entry is that field's `Descriptor` (as passed
+     * to `useFields`) augmented with the validation `error` message. Only invalid
+     * fields are included. Use `errors.<name>.hidden` to identify the "no UI to
+     * recover" case, `errors.<name>.step` to navigate to the offending step, or
+     * simply iterate `Object.values(errors)` for a toast.
      */
-    onInvalid?: (errors: FormikErrors<Values>) => void;
+    onInvalid?: (errors: {
+        [K in keyof Values]?: Descriptor & { error: string };
+    }) => void;
 };
 
 /**

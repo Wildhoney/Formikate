@@ -39,6 +39,27 @@ export const enum Cursor {
 }
 
 /**
+ * Raw field configuration — the shape consumers write when defining a form's fields.
+ * The `step` identifier is loosely typed as `Step` here; `Config<S>` narrows it via a
+ * generic parameter for stronger inference inside `useFields`.
+ */
+export type Descriptor = {
+    /** Which step this field belongs to. Must match one of the identifiers in `steps`. */
+    step: Step;
+    /** Zod schema used for validation. */
+    validate: z.ZodType;
+    /** Default/reset value for the field. Also used as the initial value when passed to `useForm`. */
+    value: unknown;
+    /** Whether this field participates in the form. Defaults to `Mode.Attached`. */
+    mode?: Mode;
+    /**
+     * When `true` on an `Attached` field, the field is not rendered but its value is
+     * still submitted and validated on every submit attempt. Ignored when `Detached`.
+     */
+    hidden?: boolean;
+};
+
+/**
  * Configuration object passed to `useFields` defining the form's step and field structure.
  * @template S - The step identifier type, inferred from the `steps` array.
  */
@@ -46,24 +67,7 @@ export type Config<S extends Step = Step> = {
     /** Ordered list of step identifiers. */
     steps: readonly S[];
     /** Map of field names to their configuration. */
-    fields: Record<
-        string,
-        {
-            /** Which step this field belongs to. Must match one of the identifiers in `steps`. */
-            step: NoInfer<S>;
-            /** Zod schema used for validation. */
-            validate: z.ZodType;
-            /** Default/reset value for the field. Also used as the initial value when passed to `useForm`. */
-            value: unknown;
-            /** Whether this field participates in the form. Defaults to `Mode.Attached`. */
-            mode?: Mode;
-            /**
-             * When `true` on an `Attached` field, the field is not rendered but its value is
-             * still submitted and validated on every submit attempt. Ignored when `Detached`.
-             */
-            hidden?: boolean;
-        }
-    >;
+    fields: Record<string, Omit<Descriptor, 'step'> & { step: NoInfer<S> }>;
 };
 
 /** Controls step navigation. Accepts a step identifier or a `Cursor` enum value. */
@@ -116,6 +120,8 @@ export type Result = {
     required(): boolean;
     /** Whether the Zod schema accepts `undefined` for this field. */
     optional(): boolean;
+    /** The raw descriptor supplied by the consumer — reflects the latest `useFields` config. */
+    descriptor: Descriptor;
 };
 
 /** The computed state written to `form.status` by `useFields`. */
