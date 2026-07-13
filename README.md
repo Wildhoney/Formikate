@@ -1,10 +1,26 @@
-# <img src="media/icon.png" alt="Formikate" width="32" height="32" /> Formikate
+<div align="center">
+  <img src="/media/logo.png" width="475" alt="Formikate" />
+
+# Formikate
 
 [![Checks](https://github.com/Wildhoney/Formikate/actions/workflows/checks.yml/badge.svg)](https://github.com/Wildhoney/Formikate/actions/workflows/checks.yml)
+[![Deploy](https://github.com/Wildhoney/Formikate/actions/workflows/deploy.yml/badge.svg)](https://github.com/Wildhoney/Formikate/actions/workflows/deploy.yml)
 
-Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
+</div>
 
-**[View Live Demo](https://wildhoney.github.io/Formikate/)**
+> Lightweight form builder for React that lets you dynamically render form fields from validation schemas, manage multi-step flows, and simplify validation handling.
+
+> **[View Live Demo →](https://wildhoney.github.io/Formikate/)**
+
+## Contents
+
+1. [Features](#features)
+1. [Getting started](#getting-started)
+1. [Fields](#fields)
+1. [Status](#status)
+1. [Rendering](#rendering)
+1. [Multi-step](#multi-step)
+1. [Empty state](#empty-state)
 
 ## Features
 
@@ -69,7 +85,7 @@ const form = useForm<Schema>({
 
 You can use `form` to access [all of the usual](https://formik.org/docs/api/formik#props-1) Formik properties such as `form.values` and `form.errors`.
 
-## Defining Steps and Fields
+## Fields
 
 Use `useFields` to declare the step structure and field configuration. The `step` property on each field is strongly typed &mdash; it must match one of the identifiers in the `steps` array:
 
@@ -88,14 +104,14 @@ useFields(form, () => ({
 }));
 ```
 
-### Config Shape
+### Config
 
 | Property | Type                             | Description                               |
 | -------- | -------------------------------- | ----------------------------------------- |
 | `steps`  | `(string \| number \| symbol)[]` | Ordered list of step identifiers          |
 | `fields` | `Record<string, FieldConfig>`    | Map of field names to their configuration |
 
-### Field Config
+### Field config
 
 | Property   | Type                         | Description                                                                                                                                                                                                                                                                               |
 | ---------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -105,7 +121,7 @@ useFields(form, () => ({
 | `mode`     | `Mode?`                      | `Mode.Attached` (default) — the field participates in the form; `Mode.Detached` — the field is excluded from validation and reset to `value`                                                                                                                                              |
 | `hidden`   | `boolean?`                   | When `true` on an `Attached` field, the field is not rendered but its value is still submitted and validated on every submit attempt. Ignored when `Detached`. `onInvalid` fires on any submit-blocked validation and sets `meta.hidden = true` when at least one invalid field is hidden |
 
-### Step Mode
+### Step mode
 
 A step's mode and visibility are derived from its fields:
 
@@ -113,7 +129,7 @@ A step's mode and visibility are derived from its fields:
 - Every attached field on the step is `hidden: true` &rarr; the step is `Attached` but `.hidden()`. It is skipped in navigation; its fields still validate on submit.
 - All fields are `Detached` &rarr; step is `Detached`. It is fully absent.
 
-### Automatic Step Skipping
+### Skipping
 
 Steps whose attached fields are all hidden, or whose only fields are detached, are skipped during navigation:
 
@@ -146,7 +162,7 @@ form.status.progress; // step progression
 form.status.navigate; // navigation controls
 ```
 
-### Field State
+### Field state
 
 ```tsx
 form.status.field.name.mode(Mode.Attached); // true when the field is in the form
@@ -157,7 +173,7 @@ form.status.field.name.required(); // true if the Zod schema rejects `undefined`
 form.status.field.name.optional(); // inverse of required()
 ```
 
-### Step State
+### Step state
 
 ```tsx
 form.status.step.personal.mode(Mode.Attached); // true when this step is in the navigation flow
@@ -229,7 +245,7 @@ import { Form, Cursor } from 'formikate';
 </Form>;
 ```
 
-### Accessing Form in Child Components
+### Child components
 
 Use the `useFormContext` hook in child components to access the form with properly typed `status`:
 
@@ -246,7 +262,7 @@ function NameField() {
 }
 ```
 
-## Multi-Step Rendering
+## Multi-step
 
 Gate whole sections of your form by step using `form.status.step[id].active()`. Each step renders only when it's the current step:
 
@@ -305,7 +321,7 @@ For milestone steps that have no inputs (e.g. a "done" screen), check `step[id].
 }
 ```
 
-## Empty State
+## Empty state
 
 When no fields or steps are configured, `form.status.empty` is `true`:
 
