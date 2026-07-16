@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="/media/logo.png" width="475" alt="Formikate" />
+  <img src="/media/logo.png" width="250" alt="Formikate" />
 
 # Formikate
 
