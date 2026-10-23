@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.6.0](https://github.com/Wildhoney/Formikate/compare/v0.5.0...v0.6.0) (2026-10-23)
+
+### ⚠ BREAKING CHANGES
+
+- field descriptors use `initial` instead of `value`, the
+  `Mode` export is removed in favour of `excluded: boolean`, and status
+  `mode(...)` predicates are replaced by `included()` / `excluded()`.
+
+### Features
+
+- rename field value to initial and replace Mode with excluded ([4c2ae12](https://github.com/Wildhoney/Formikate/commit/4c2ae12bcdfbf07f463f92f348e8934792ee4ab0))
+
+### Bug Fixes
+
+- **deps:** patch postcss, js-yaml, fast-xml-parser, fast-uri security advisories ([1304507](https://github.com/Wildhoney/Formikate/commit/1304507e7c8d1d105cc411ae1ac03de85e571e7a))
+- resolve open Dependabot security alerts ([154a36e](https://github.com/Wildhoney/Formikate/commit/154a36e16df4ac5b8ccf0cc8d30236a3139b1626))
+
 ## [0.5.0](https://github.com/Wildhoney/Formikate/compare/v0.4.1...v0.5.0) (2026-07-01)
 
 ### ⚠ BREAKING CHANGES
