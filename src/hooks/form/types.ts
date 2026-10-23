@@ -1,19 +1,24 @@
 import type { FormikConfig, FormikValues, useFormik } from 'formik';
+import type * as z from 'zod';
 import type { config } from './utils.js';
 import type { Status as FieldsStatus, Descriptor } from '../fields/types.js';
 
 /**
  * Formik configuration with `validate`, `validationSchema`, and `initialValues` omitted.
- * Initial values are derived from the `value` property of each entry in `fields`.
+ * Initial values are derived from the `initial` property of each entry in `fields`.
  * @template Values - The form values shape extending `FormikValues`.
  */
 export type Props<Values extends FormikValues> = Omit<
     FormikConfig<Values>,
     'validate' | 'validationSchema' | 'initialValues'
 > & {
-    /** Map of field names to descriptors containing at least a `value` property. */
+    /** Map of field names to descriptors; `initial` is typed from each field's `validate` schema. */
     fields: {
-        [K in keyof Values]: { value: Values[K]; [key: string]: unknown };
+        [K in keyof Values]: {
+            validate: z.ZodType<Values[K]>;
+            initial: NoInfer<Values[K]> | null | undefined;
+            [key: string]: unknown;
+        };
     };
     /**
      * Called when a submit attempt is blocked by validation errors. Receives a map

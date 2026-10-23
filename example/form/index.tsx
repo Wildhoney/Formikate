@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { useForm, useFields, Form, Mode, Cursor } from '../../src';
+import { useForm, useFields, Form, Cursor } from '../../src';
 import { ReactElement, useRef, useEffect, ComponentRef } from 'react';
 import { Carousel } from 'antd';
 import toast, { Toaster } from 'react-hot-toast';
@@ -56,11 +56,11 @@ export default function Details(): ReactElement {
             ...fields,
             age: {
                 ...fields.age,
-                mode: form.values.guest ? Mode.Detached : Mode.Attached,
+                excluded: form.values.guest,
             },
             telephone: {
                 ...fields.telephone,
-                mode: form.values.guest ? Mode.Detached : Mode.Attached,
+                excluded: form.values.guest,
             },
         },
     }));

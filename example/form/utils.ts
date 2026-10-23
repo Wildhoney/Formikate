@@ -39,22 +39,22 @@ export const schema = z.object({
 });
 
 export const fields = {
-    name: { step: 'name' as const, validate: schema.shape.name, value: '' },
+    name: { step: 'name' as const, validate: schema.shape.name, initial: '' },
     guest: {
         step: 'name' as const,
         validate: schema.shape.guest,
-        value: false,
+        initial: false,
     },
-    age: { step: 'name' as const, validate: schema.shape.age, value: '' },
+    age: { step: 'name' as const, validate: schema.shape.age, initial: '' },
     telephone: {
         step: 'address' as const,
         validate: schema.shape.telephone,
-        value: '',
+        initial: '',
     },
     csrfToken: {
         step: 'name' as const,
         hidden: true,
         validate: schema.shape.csrfToken,
-        value: 'csrf-demo-token',
+        initial: 'csrf-demo-token',
     },
 };

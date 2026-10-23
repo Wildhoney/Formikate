@@ -26,9 +26,9 @@
 
 - Dynamically render form fields using [`zod`](https://github.com/colinhacks/zod) validation schemas
 - Declarative multi-step forms via `useFields` configuration
-- Fields can be set to `Mode.Detached` to be excluded from the form and reset to their default values
-- Attached fields with `hidden: true` are validated on submit but never rendered — surfaced through `onInvalid` (which fires on any submit-blocked validation and passes `meta.hidden` to identify this case)
-- Steps whose attached fields are all hidden (or whose only fields are detached) are automatically skipped during navigation
+- Fields can be marked `excluded: true` to be left out of the form and reset to their `initial` values
+- Included fields with `hidden: true` are validated on submit but never rendered — surfaced through `onInvalid` (which fires on any submit-blocked validation and passes `meta.hidden` to identify this case)
+- Steps whose included fields are all hidden (or whose fields are all excluded) are automatically skipped during navigation
 - Per-step validation &mdash; only fields on the current step (or earlier) are validated on submit
 
 ## Getting started
@@ -50,22 +50,22 @@ export const fields = {
     name: {
         step: 'personal' as const,
         validate: schema.shape.name,
-        value: '',
+        initial: '',
     },
     address: {
         step: 'delivery' as const,
         validate: schema.shape.address,
-        value: '',
+        initial: '',
     },
     guest: {
         step: 'personal' as const,
         validate: schema.shape.guest,
-        value: false,
+        initial: false,
     },
 };
 ```
 
-Import `useForm` &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik) (except `validate`, `validationSchema`, and `initialValues` which are handled internally). Initial values are derived from each field's `value` property:
+Import `useForm` &ndash; it accepts all of the same [`useFormik` (`Formik`) arguments](https://formik.org/docs/api/useFormik) (except `validate`, `validationSchema`, and `initialValues` which are handled internally). Initial values are derived from each field's `initial` property:
 
 ```tsx
 import { useForm, useFields, Cursor } from 'formikate';
@@ -90,15 +90,13 @@ You can use `form` to access [all of the usual](https://formik.org/docs/api/form
 Use `useFields` to declare the step structure and field configuration. The `step` property on each field is strongly typed &mdash; it must match one of the identifiers in the `steps` array:
 
 ```tsx
-import { Mode } from 'formikate';
-
 useFields(form, () => ({
     steps: ['personal', 'delivery', 'review'],
     fields: {
         ...fields,
         address: {
             ...fields.address,
-            mode: form.values.guest ? Mode.Detached : Mode.Attached,
+            excluded: form.values.guest,
         },
     },
 }));
@@ -113,42 +111,40 @@ useFields(form, () => ({
 
 ### Field config
 
-| Property   | Type                         | Description                                                                                                                                                                                                                                                                               |
-| ---------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `step`     | `string \| number \| symbol` | Which step this field belongs to &mdash; must match one of the identifiers in `steps`                                                                                                                                                                                                     |
-| `validate` | `ZodType`                    | Zod schema used for validation                                                                                                                                                                                                                                                            |
-| `value`    | `unknown`                    | Default/reset value &mdash; also used as the initial value when passed to `useForm`                                                                                                                                                                                                       |
-| `mode`     | `Mode?`                      | `Mode.Attached` (default) — the field participates in the form; `Mode.Detached` — the field is excluded from validation and reset to `value`                                                                                                                                              |
-| `hidden`   | `boolean?`                   | When `true` on an `Attached` field, the field is not rendered but its value is still submitted and validated on every submit attempt. Ignored when `Detached`. `onInvalid` fires on any submit-blocked validation and sets `meta.hidden = true` when at least one invalid field is hidden |
+| Property   | Type                                     | Description                                                                                                                                                                                                                                                                             |
+| ---------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `step`     | `string \| number \| symbol`             | Which step this field belongs to &mdash; must match one of the identifiers in `steps`                                                                                                                                                                                                   |
+| `validate` | `ZodType`                                | Zod schema used for validation                                                                                                                                                                                                                                                          |
+| `initial`  | `z.infer<validate> \| null \| undefined` | Initial value &mdash; typed from the `validate` schema; also the reset value when `excluded`                                                                                                                                                                                            |
+| `excluded` | `boolean?`                               | When `true`, the field is left out of the form &mdash; not validated, not rendered, and reset to `initial`. Defaults to `false`                                                                                                                                                         |
+| `hidden`   | `boolean?`                               | When `true` on an included field, the field is not rendered but its value is still submitted and validated on every submit attempt. Ignored when `excluded`. `onInvalid` fires on any submit-blocked validation and sets `meta.hidden = true` when at least one invalid field is hidden |
 
-### Step mode
+### Step state derivation
 
-A step's mode and visibility are derived from its fields:
+A step's inclusion and visibility are derived from its fields:
 
-- Any `Attached` field (or zero fields) &rarr; step is `Attached`. It appears in the navigation flow when at least one field is non-hidden.
-- Every attached field on the step is `hidden: true` &rarr; the step is `Attached` but `.hidden()`. It is skipped in navigation; its fields still validate on submit.
-- All fields are `Detached` &rarr; step is `Detached`. It is fully absent.
+- Any included field (or zero fields) &rarr; step is `.included()`. It appears in the navigation flow when at least one field is non-hidden.
+- Every included field on the step is `hidden: true` &rarr; the step is included but `.hidden()`. It is skipped in navigation; its fields still validate on submit.
+- Every field is `excluded: true` &rarr; step is `.excluded()`. It is fully absent.
 
 ### Skipping
 
-Steps whose attached fields are all hidden, or whose only fields are detached, are skipped during navigation:
+Steps whose included fields are all hidden, or whose fields are all excluded, are skipped during navigation:
 
 ```tsx
-import { Mode } from 'formikate';
-
 useFields(form, () => ({
     steps: ['personal', 'delivery', 'review'],
     fields: {
         ...fields,
         address: {
             ...fields.address,
-            mode: form.values.guest ? Mode.Detached : Mode.Attached,
+            excluded: form.values.guest,
         },
     },
 }));
 ```
 
-When `guest` is `true`, the `address` field becomes `Mode.Detached`, so the delivery step (whose only field is now absent) is skipped.
+When `guest` is `true`, the `address` field becomes excluded, so the delivery step (whose only field is now absent) is skipped.
 
 ## Status
 
@@ -165,10 +161,10 @@ form.status.navigate; // navigation controls
 ### Field state
 
 ```tsx
-form.status.field.name.mode(Mode.Attached); // true when the field is in the form
-form.status.field.name.mode(Mode.Detached); // true when the field is excluded
-form.status.field.name.hidden(); // true when attached but flagged hidden
-form.status.field.name.visible(); // true when attached and not hidden (i.e. should render)
+form.status.field.name.included(); // true when the field is in the form
+form.status.field.name.excluded(); // true when the field is excluded
+form.status.field.name.hidden(); // true when included but flagged hidden
+form.status.field.name.visible(); // true when included and not hidden (i.e. should render)
 form.status.field.name.required(); // true if the Zod schema rejects `undefined`
 form.status.field.name.optional(); // inverse of required()
 ```
@@ -176,12 +172,12 @@ form.status.field.name.optional(); // inverse of required()
 ### Step state
 
 ```tsx
-form.status.step.personal.mode(Mode.Attached); // true when this step is in the navigation flow
-form.status.step.personal.mode(Mode.Detached); // true when the step is fully absent
-form.status.step.personal.hidden(); // true when every attached field is hidden
+form.status.step.personal.included(); // true when this step is in the navigation flow
+form.status.step.personal.excluded(); // true when the step is fully absent
+form.status.step.personal.hidden(); // true when every included field is hidden
 form.status.step.personal.visible(); // true when the step has at least one non-hidden field
 form.status.step.personal.active(); // true when this is the current step
-form.status.step.personal.fields(); // array of visible attached field names on this step
+form.status.step.personal.fields(); // array of visible included field names on this step
 ```
 
 ### Progress

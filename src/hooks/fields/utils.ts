@@ -1,39 +1,31 @@
 import { toFormikValidate } from 'zod-formik-adapter';
 import * as z from 'zod';
 import type { Config, Result, Status, Step, StepResult } from './types.js';
-import { Mode, Cursor } from './types.js';
-
-/** Resolves a field descriptor's `mode`, defaulting to `Mode.Attached` when undefined. */
-export function getMode(mode: Mode | undefined): Mode {
-    return mode === undefined ? Mode.Attached : mode;
-}
+import { Cursor } from './types.js';
 
 /**
- * Derives the mode of a step from its fields:
- * - Any `Attached` field (or zero fields) → `Attached`.
- * - Otherwise → `Detached`.
+ * A step is excluded when it has at least one field and every field on it is
+ * `excluded: true`. Steps with no fields are always included.
  */
-export function getStepMode(step: Step, fields: Config['fields']): Mode {
+export function getStepExcluded(step: Step, fields: Config['fields']): boolean {
     const stepFields = Object.values(fields).filter(
         (field) => field.step === step,
     );
-    if (stepFields.length === 0) return Mode.Attached;
-    if (stepFields.some((field) => getMode(field.mode) === Mode.Attached))
-        return Mode.Attached;
-    return Mode.Detached;
+    if (stepFields.length === 0) return false;
+    return stepFields.every((field) => field.excluded === true);
 }
 
 /**
- * A step is "hidden" when every attached field on it is `hidden: true`. Steps with no
- * fields or any non-hidden attached field are not hidden. Detached steps are not
+ * A step is "hidden" when every included field on it is `hidden: true`. Steps with no
+ * fields or any non-hidden included field are not hidden. Excluded steps are not
  * considered hidden (they're absent, not hidden).
  */
 export function getStepHidden(step: Step, fields: Config['fields']): boolean {
-    const attached = Object.values(fields).filter(
-        (field) => field.step === step && getMode(field.mode) === Mode.Attached,
+    const included = Object.values(fields).filter(
+        (field) => field.step === step && field.excluded !== true,
     );
-    if (attached.length === 0) return false;
-    return attached.every((field) => field.hidden === true);
+    if (included.length === 0) return false;
+    return included.every((field) => field.hidden === true);
 }
 
 /**
@@ -75,12 +67,12 @@ export function validate(
 
     const visibleSteps = config.steps.filter(
         (step) =>
-            getStepMode(step, config.fields) === Mode.Attached &&
+            !getStepExcluded(step, config.fields) &&
             !getStepHidden(step, config.fields),
     );
 
     const includedFields = Object.entries(config.fields).filter(([, field]) => {
-        if (getMode(field.mode) === Mode.Detached) return false;
+        if (field.excluded === true) return false;
         if (field.hidden === true) return true;
         const fieldStepIndex = visibleSteps.indexOf(field.step);
         return fieldStepIndex !== -1 && fieldStepIndex <= index;
@@ -101,13 +93,14 @@ export function getFieldState(
 ): Record<string, Result> {
     const state: Record<string, Result> = {};
     for (const [name, field] of Object.entries(fields)) {
-        const fieldMode = getMode(field.mode);
-        const isHidden = fieldMode === Mode.Attached && field.hidden === true;
+        const isExcluded = field.excluded === true;
+        const isHidden = !isExcluded && field.hidden === true;
         const isOptional = field.validate.safeParse(undefined).success;
         state[name] = {
-            mode: (value: Mode) => fieldMode === value,
+            included: () => !isExcluded,
+            excluded: () => isExcluded,
             hidden: () => isHidden,
-            visible: () => fieldMode === Mode.Attached && !isHidden,
+            visible: () => !isExcluded && !isHidden,
             required: () => !isOptional,
             optional: () => isOptional,
             descriptor: field,
@@ -126,20 +119,21 @@ export function getStepState(
 ): Record<Step, StepResult> {
     const inputsByStep: Record<Step, string[]> = {};
     for (const [name, field] of Object.entries(fields)) {
-        if (getMode(field.mode) !== Mode.Attached) continue;
+        if (field.excluded === true) continue;
         if (field.hidden === true) continue;
         (inputsByStep[field.step] ??= []).push(name);
     }
 
     const step: Record<Step, StepResult> = {};
     for (const stepId of allSteps) {
-        const stepMode = getStepMode(stepId, fields);
+        const stepExcluded = getStepExcluded(stepId, fields);
         const stepHidden = getStepHidden(stepId, fields);
         const stepFields = inputsByStep[stepId] ?? [];
         step[stepId] = {
-            mode: (value: Mode) => stepMode === value,
+            included: () => !stepExcluded,
+            excluded: () => stepExcluded,
             hidden: () => stepHidden,
-            visible: () => stepMode === Mode.Attached && !stepHidden,
+            visible: () => !stepExcluded && !stepHidden,
             active: () => stepId === currentStepId,
             fields: () => stepFields,
         };

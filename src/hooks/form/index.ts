@@ -27,7 +27,7 @@ export function useForm<Values extends FormikValues>(
     const initialValues = Object.fromEntries(
         Object.entries(fields).map(([name, descriptor]) => [
             name,
-            descriptor.value,
+            descriptor.initial,
         ]),
     ) as Values;
 

@@ -1,15 +1,14 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import type { FormikValues } from 'formik';
+import type * as z from 'zod';
 
 import type { Formikate } from '../form/types.js';
 import { config as formikateConfig } from '../form/utils.js';
 import type { Config, Status, Step } from './types.js';
-import { Mode } from './types.js';
 import {
     validate,
     getFieldState,
-    getMode,
-    getStepMode,
+    getStepExcluded,
     getStepHidden,
     getProgress,
     getStepState,
@@ -26,16 +25,17 @@ export type {
     Progress,
     Descriptor,
 } from './types.js';
-export { Mode, Cursor } from './types.js';
+export { Cursor } from './types.js';
 
 /**
  * Declares the form's step and field structure, computing navigation, progress,
  * validation, and field visibility state. Writes the result to `form.status`.
  */
-export function useFields<Values extends FormikValues, const S extends Step>(
-    form: Formikate<Values>,
-    getConfig: () => Config<S>,
-): void {
+export function useFields<
+    Values extends FormikValues,
+    const S extends Step,
+    F extends Record<string, z.ZodType>,
+>(form: Formikate<Values>, getConfig: () => Config<S, F>): void {
     const [stepIndex, setStepIndex] = useState<number>(0);
     const config = useMemo(() => getConfig(), [getConfig]);
 
@@ -43,7 +43,7 @@ export function useFields<Values extends FormikValues, const S extends Step>(
         () =>
             config.steps.filter(
                 (step) =>
-                    getStepMode(step, config.fields) === Mode.Attached &&
+                    !getStepExcluded(step, config.fields) &&
                     !getStepHidden(step, config.fields),
             ),
         [config],
@@ -57,13 +57,12 @@ export function useFields<Values extends FormikValues, const S extends Step>(
 
     useLayoutEffect(() => {
         for (const [name, field] of Object.entries(config.fields)) {
-            const mode = getMode(field.mode);
-            if (mode === Mode.Detached) {
-                if (form.values[name] !== field.value)
-                    form.setFieldValue(name, field.value);
+            if (field.excluded === true) {
+                if (form.values[name] !== field.initial)
+                    form.setFieldValue(name, field.initial);
                 continue;
             }
-            if (!(name in form.values)) form.setFieldValue(name, field.value);
+            if (!(name in form.values)) form.setFieldValue(name, field.initial);
         }
     }, [form, config.fields]);
 

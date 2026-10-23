@@ -4,26 +4,6 @@ import type * as z from 'zod';
 export type Step = string | number | symbol;
 
 /**
- * Mode controls whether a field participates in the form at all.
- * - `Attached`: the field is part of the form — its value is submitted and (subject to the
- *   `hidden` flag) validated per the per-step rules.
- * - `Detached`: the field is not in the form — excluded from validation and reset to `value`.
- *
- * Use the `hidden` boolean on the field descriptor to control whether an attached field
- * renders in the UI. `Detached` fields are never rendered.
- *
- * At the step level, mode/hidden are derived from the step's fields:
- * - Any `Attached` field (or zero fields) → step is `Attached`.
- * - Otherwise → step is `Detached` (skipped in navigation).
- * - A step is "hidden" when every attached field on it is hidden — the step is skipped
- *   in navigation but its fields still validate on submit.
- */
-export enum Mode {
-    Attached = 'attached',
-    Detached = 'detached',
-}
-
-/**
  * Relative navigation targets. Pass to `navigate.to` / `navigate.exists` to move within
  * the visible step list without referencing a step identifier directly.
  */
@@ -43,18 +23,29 @@ export const enum Cursor {
  * The `step` identifier is loosely typed as `Step` here; `Config<S>` narrows it via a
  * generic parameter for stronger inference inside `useFields`.
  */
-export type Descriptor = {
+export type Descriptor<
+    T extends z.ZodType = z.ZodType,
+    S extends Step = Step,
+> = {
     /** Which step this field belongs to. Must match one of the identifiers in `steps`. */
-    step: Step;
+    step: S;
     /** Zod schema used for validation. */
-    validate: z.ZodType;
-    /** Default/reset value for the field. Also used as the initial value when passed to `useForm`. */
-    value: unknown;
-    /** Whether this field participates in the form. Defaults to `Mode.Attached`. */
-    mode?: Mode;
+    validate: T;
     /**
-     * When `true` on an `Attached` field, the field is not rendered but its value is
-     * still submitted and validated on every submit attempt. Ignored when `Detached`.
+     * Initial value for the field, typed from the `validate` schema (or `null`/`undefined`).
+     * Also used as the reset value when the field is `Detached`.
+     */
+    initial: z.infer<T> | null | undefined;
+    /**
+     * When `true`, the field is left out of the form entirely — excluded from validation
+     * and reset to `initial`. Defaults to `false`. A step whose fields are all excluded is
+     * skipped in navigation; a step with no fields is never excluded.
+     */
+    excluded?: boolean;
+    /**
+     * When `true` on an included field, the field is not rendered but its value is
+     * still submitted and validated on every submit attempt. Ignored when `excluded`.
+     * A step whose included fields are all hidden is skipped in navigation.
      */
     hidden?: boolean;
 };
@@ -62,12 +53,16 @@ export type Descriptor = {
 /**
  * Configuration object passed to `useFields` defining the form's step and field structure.
  * @template S - The step identifier type, inferred from the `steps` array.
+ * @template F - Map of field names to Zod schemas, inferred from each field's `validate`.
  */
-export type Config<S extends Step = Step> = {
+export type Config<
+    S extends Step = Step,
+    F extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> = {
     /** Ordered list of step identifiers. */
     steps: readonly S[];
     /** Map of field names to their configuration. */
-    fields: Record<string, Omit<Descriptor, 'step'> & { step: NoInfer<S> }>;
+    fields: { [K in keyof F]: Descriptor<F[K], NoInfer<S>> };
 };
 
 /** Controls step navigation. Accepts a step identifier or a `Cursor` enum value. */
@@ -96,25 +91,29 @@ export type Progress = {
 
 /** Per-step computed state returned by `form.status.step[id]`. */
 export type StepResult = {
-    /** Predicate: is this step in the given mode? Mode is derived from the step's fields. */
-    mode(value: Mode): boolean;
-    /** Whether every attached field on this step is hidden. */
+    /** Whether this step has no fields or at least one included field. */
+    included(): boolean;
+    /** Whether this step has fields and every one of them is excluded. */
+    excluded(): boolean;
+    /** Whether every included field on this step is hidden. */
     hidden(): boolean;
-    /** Whether the step is `Attached` and has at least one non-hidden field. */
+    /** Whether the step is included and has at least one non-hidden field. */
     visible(): boolean;
     /** Whether this is the current step in the navigation flow. */
     active(): boolean;
-    /** Names of attached, non-hidden field names on this step. */
+    /** Names of included, non-hidden fields on this step. */
     fields(): string[];
 };
 
 /** Per-field computed state returned by `form.status.field[name]`. */
 export type Result = {
-    /** Predicate: is this field in the given mode? */
-    mode(value: Mode): boolean;
-    /** Whether this field is attached but flagged as hidden. */
+    /** Whether this field participates in the form (not `excluded`). */
+    included(): boolean;
+    /** Whether this field is `excluded` from the form. */
+    excluded(): boolean;
+    /** Whether this field is included but flagged as hidden. */
     hidden(): boolean;
-    /** Whether this field is attached and not hidden — i.e. should render. */
+    /** Whether this field is included and not hidden — i.e. should render. */
     visible(): boolean;
     /** Whether the Zod schema rejects `undefined` for this field. */
     required(): boolean;

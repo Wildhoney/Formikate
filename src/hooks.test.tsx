@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import * as z from 'zod';
-import { useForm, useFields, Mode, Cursor } from './index.js';
+import { useForm, useFields, Cursor } from './index.js';
 import type { Config } from './index.js';
 
 type FieldsMap = Config['fields'];
@@ -24,60 +24,54 @@ function setup<Steps extends string>(
 }
 
 describe('Field mode predicates', () => {
-    it('defaults to Mode.Attached when mode is undefined', () => {
+    it('defaults to included when excluded is undefined', () => {
         const { result } = setup({
-            name: { step: 'only', validate: z.string(), value: '' },
+            name: { step: 'only', validate: z.string(), initial: '' },
         });
 
-        expect(result.current.status.field.name.mode(Mode.Attached)).toBe(true);
-        expect(result.current.status.field.name.mode(Mode.Detached)).toBe(
-            false,
-        );
+        expect(result.current.status.field.name.included()).toBe(true);
+        expect(result.current.status.field.name.excluded()).toBe(false);
         expect(result.current.status.field.name.hidden()).toBe(false);
         expect(result.current.status.field.name.visible()).toBe(true);
     });
 
-    it('reflects explicit hidden attached field', () => {
+    it('reflects explicit hidden included field', () => {
         const { result } = setup({
             csrf: {
                 step: 'only',
                 validate: z.string(),
-                value: 'token',
+                initial: 'token',
                 hidden: true,
             },
         });
 
-        expect(result.current.status.field.csrf.mode(Mode.Attached)).toBe(true);
+        expect(result.current.status.field.csrf.included()).toBe(true);
         expect(result.current.status.field.csrf.hidden()).toBe(true);
         expect(result.current.status.field.csrf.visible()).toBe(false);
     });
 
-    it('reflects explicit Mode.Detached', () => {
+    it('reflects explicit excluded: true', () => {
         const { result } = setup({
             absent: {
                 step: 'only',
                 validate: z.string(),
-                value: '',
-                mode: Mode.Detached,
+                initial: '',
+                excluded: true,
             },
         });
 
-        expect(result.current.status.field.absent.mode(Mode.Detached)).toBe(
-            true,
-        );
-        expect(result.current.status.field.absent.mode(Mode.Attached)).toBe(
-            false,
-        );
+        expect(result.current.status.field.absent.excluded()).toBe(true);
+        expect(result.current.status.field.absent.included()).toBe(false);
         expect(result.current.status.field.absent.visible()).toBe(false);
     });
 
-    it('hidden flag is ignored when mode is Detached', () => {
+    it('hidden flag is ignored when excluded', () => {
         const { result } = setup({
             absent: {
                 step: 'only',
                 validate: z.string(),
-                value: '',
-                mode: Mode.Detached,
+                initial: '',
+                excluded: true,
                 hidden: true,
             },
         });
@@ -88,75 +82,75 @@ describe('Field mode predicates', () => {
 });
 
 describe('Step mode derivation', () => {
-    it('step with at least one visible attached field is visible', () => {
+    it('step with at least one visible included field is visible', () => {
         const { result } = setup({
-            visible: { step: 'only', validate: z.string(), value: '' },
+            visible: { step: 'only', validate: z.string(), initial: '' },
             hidden: {
                 step: 'only',
                 validate: z.string(),
-                value: 'token',
+                initial: 'token',
                 hidden: true,
             },
         });
 
-        expect(result.current.status.step.only.mode(Mode.Attached)).toBe(true);
+        expect(result.current.status.step.only.included()).toBe(true);
         expect(result.current.status.step.only.hidden()).toBe(false);
         expect(result.current.status.step.only.visible()).toBe(true);
     });
 
-    it('step with only hidden attached fields is attached but hidden', () => {
+    it('step with only hidden included fields is attached but hidden', () => {
         const { result } = setup({
             csrf: {
                 step: 'only',
                 validate: z.string(),
-                value: 'token',
+                initial: 'token',
                 hidden: true,
             },
         });
 
-        expect(result.current.status.step.only.mode(Mode.Attached)).toBe(true);
+        expect(result.current.status.step.only.included()).toBe(true);
         expect(result.current.status.step.only.hidden()).toBe(true);
         expect(result.current.status.step.only.visible()).toBe(false);
     });
 
-    it('step with mixed hidden + detached resolves to hidden', () => {
+    it('step with mixed hidden + excluded resolves to hidden', () => {
         const { result } = setup({
             csrf: {
                 step: 'only',
                 validate: z.string(),
-                value: 'token',
+                initial: 'token',
                 hidden: true,
             },
             absent: {
                 step: 'only',
                 validate: z.string(),
-                value: '',
-                mode: Mode.Detached,
+                initial: '',
+                excluded: true,
             },
         });
 
-        expect(result.current.status.step.only.mode(Mode.Attached)).toBe(true);
+        expect(result.current.status.step.only.included()).toBe(true);
         expect(result.current.status.step.only.hidden()).toBe(true);
     });
 
-    it('step with only detached fields resolves to Mode.Detached', () => {
+    it('step with only excluded fields is excluded', () => {
         const { result } = setup({
             absent: {
                 step: 'only',
                 validate: z.string(),
-                value: '',
-                mode: Mode.Detached,
+                initial: '',
+                excluded: true,
             },
         });
 
-        expect(result.current.status.step.only.mode(Mode.Detached)).toBe(true);
+        expect(result.current.status.step.only.excluded()).toBe(true);
         expect(result.current.status.step.only.visible()).toBe(false);
     });
 
-    it('step with zero fields resolves to Mode.Attached', () => {
+    it('step with zero fields is included', () => {
         const { result } = setup({}, ['done']);
 
-        expect(result.current.status.step.done.mode(Mode.Attached)).toBe(true);
+        expect(result.current.status.step.done.included()).toBe(true);
         expect(result.current.status.step.done.visible()).toBe(true);
     });
 });
@@ -165,8 +159,8 @@ describe('Step state', () => {
     it('active() is true only for the current step', () => {
         const { result } = setup(
             {
-                first: { step: 'first', validate: z.string(), value: '' },
-                second: { step: 'second', validate: z.string(), value: '' },
+                first: { step: 'first', validate: z.string(), initial: '' },
+                second: { step: 'second', validate: z.string(), initial: '' },
             },
             ['first', 'second'],
         );
@@ -175,21 +169,21 @@ describe('Step state', () => {
         expect(result.current.status.step.second.active()).toBe(false);
     });
 
-    it('fields() lists visible attached field names only', () => {
+    it('fields() lists visible included field names only', () => {
         const { result } = setup(
             {
-                visible: { step: 'only', validate: z.string(), value: '' },
+                visible: { step: 'only', validate: z.string(), initial: '' },
                 hidden: {
                     step: 'only',
                     validate: z.string(),
-                    value: 't',
+                    initial: 't',
                     hidden: true,
                 },
                 absent: {
                     step: 'only',
                     validate: z.string(),
-                    value: '',
-                    mode: Mode.Detached,
+                    initial: '',
+                    excluded: true,
                 },
             },
             ['only'],
@@ -202,9 +196,9 @@ describe('Step state', () => {
 describe('Navigation', () => {
     const threeSteps = ['first', 'second', 'third'] as const;
     const threeFields: FieldsMap = {
-        a: { step: 'first', validate: z.string(), value: '' },
-        b: { step: 'second', validate: z.string(), value: '' },
-        c: { step: 'third', validate: z.string(), value: '' },
+        a: { step: 'first', validate: z.string(), initial: '' },
+        b: { step: 'second', validate: z.string(), initial: '' },
+        c: { step: 'third', validate: z.string(), initial: '' },
     };
 
     it('to(Cursor.Next) advances and exists() reflects bounds', () => {
@@ -266,23 +260,23 @@ describe('Navigation', () => {
         );
     });
 
-    it('skips hidden and detached steps', () => {
+    it('skips hidden and excluded steps', () => {
         const { result } = setup(
             {
-                a: { step: 'first', validate: z.string(), value: '' },
+                a: { step: 'first', validate: z.string(), initial: '' },
                 hiddenField: {
                     step: 'second',
                     validate: z.string(),
-                    value: 'token',
+                    initial: 'token',
                     hidden: true,
                 },
                 absentField: {
                     step: 'third',
                     validate: z.string(),
-                    value: '',
-                    mode: Mode.Detached,
+                    initial: '',
+                    excluded: true,
                 },
-                d: { step: 'fourth', validate: z.string(), value: '' },
+                d: { step: 'fourth', validate: z.string(), initial: '' },
             },
             ['first', 'second', 'third', 'fourth'] as const,
         );
@@ -297,11 +291,11 @@ describe('Navigation', () => {
 });
 
 describe('Initial values', () => {
-    it('derives initial values from each field.value', () => {
+    it('derives initial values from each field.initial', () => {
         const { result } = setup({
-            name: { step: 'only', validate: z.string(), value: 'hello' },
-            count: { step: 'only', validate: z.number(), value: 42 },
-            flag: { step: 'only', validate: z.boolean(), value: true },
+            name: { step: 'only', validate: z.string(), initial: 'hello' },
+            count: { step: 'only', validate: z.number(), initial: 42 },
+            flag: { step: 'only', validate: z.boolean(), initial: true },
         });
 
         expect(result.current.values).toEqual({
@@ -315,7 +309,7 @@ describe('Initial values', () => {
 describe('Required / optional from Zod schema', () => {
     it('required(): schema rejects undefined', () => {
         const { result } = setup({
-            name: { step: 'only', validate: z.string(), value: '' },
+            name: { step: 'only', validate: z.string(), initial: '' },
         });
 
         expect(result.current.status.field.name.required()).toBe(true);
@@ -327,7 +321,7 @@ describe('Required / optional from Zod schema', () => {
             nickname: {
                 step: 'only',
                 validate: z.string().optional(),
-                value: '',
+                initial: '',
             },
         });
 
@@ -340,9 +334,9 @@ describe('Progress', () => {
     it('position(), first(), last() reflect the current index', () => {
         const { result } = setup(
             {
-                a: { step: 'first', validate: z.string(), value: '' },
-                b: { step: 'second', validate: z.string(), value: '' },
-                c: { step: 'third', validate: z.string(), value: '' },
+                a: { step: 'first', validate: z.string(), initial: '' },
+                b: { step: 'second', validate: z.string(), initial: '' },
+                c: { step: 'third', validate: z.string(), initial: '' },
             },
             ['first', 'second', 'third'] as const,
         );
@@ -375,7 +369,7 @@ describe('Empty form', () => {
 
     it('status.empty is false when fields are configured', () => {
         const { result } = setup({
-            name: { step: 'only', validate: z.string(), value: '' },
+            name: { step: 'only', validate: z.string(), initial: '' },
         });
 
         expect(result.current.status.empty).toBe(false);
@@ -408,7 +402,7 @@ describe('onInvalid callback', () => {
             name: {
                 step: 'only',
                 validate: z.string().min(1, 'Name is required'),
-                value: '',
+                initial: '',
             },
         } satisfies FieldsMap;
 
@@ -425,7 +419,7 @@ describe('onInvalid callback', () => {
             name: {
                 step: 'only',
                 validate: fields.name.validate,
-                value: '',
+                initial: '',
                 error: 'Name is required',
             },
         });
@@ -437,7 +431,7 @@ describe('onInvalid callback', () => {
             csrf: {
                 step: 'only',
                 validate: z.string().min(1, 'CSRF token missing'),
-                value: '',
+                initial: '',
                 hidden: true,
             },
         } satisfies FieldsMap;
@@ -468,12 +462,12 @@ describe('onInvalid callback', () => {
             filled: {
                 step: 'only',
                 validate: z.string().min(1, 'required'),
-                value: 'ok',
+                initial: 'ok',
             },
             empty: {
                 step: 'only',
                 validate: z.string().min(1, 'required'),
-                value: '',
+                initial: '',
             },
         } satisfies FieldsMap;
 
@@ -495,7 +489,7 @@ describe('onInvalid callback', () => {
             name: {
                 step: 'only',
                 validate: z.string().min(1, 'required'),
-                value: 'valid',
+                initial: 'valid',
             },
         } satisfies FieldsMap;
 
@@ -512,7 +506,7 @@ describe('onInvalid callback', () => {
 });
 
 describe('Dynamic fields', () => {
-    it('seeds Formik values when an attached field is registered after mount', async () => {
+    it('seeds Formik values when an included field is registered after mount', async () => {
         const { result, rerender } = renderHook(
             ({ fields }: { fields: FieldsMap }) => {
                 const form = useForm({ fields, onSubmit: () => {} });
@@ -533,7 +527,7 @@ describe('Dynamic fields', () => {
                     late: {
                         step: 'only',
                         validate: z.string().min(1, 'required'),
-                        value: '',
+                        initial: '',
                     },
                 },
             });

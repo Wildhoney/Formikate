@@ -24,7 +24,7 @@ export type {
     Progress,
     Descriptor,
 } from './hooks/fields/index.js';
-export { Mode, Cursor } from './hooks/fields/index.js';
+export { Cursor } from './hooks/fields/index.js';
 
 /**
  * Provides the Formikate form instance to child components via Formik's context.
