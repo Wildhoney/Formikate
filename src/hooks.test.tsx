@@ -330,6 +330,41 @@ describe('Required / optional from Zod schema', () => {
     });
 });
 
+describe('Zod 4 missing keys', () => {
+    // A field registered only via `useFields` with `initial: undefined` never gets a
+    // key in Formik's values (seeding `undefined` is a no-op), and Zod 4 rejects a
+    // missing key for `z.any()`/`z.unknown()` even though it accepts `undefined`.
+    it.each([
+        ['z.any()', z.any()],
+        ['z.unknown()', z.unknown()],
+    ])('%s passes validation when its key is absent', async (_, schema) => {
+        const { result } = renderHook(() => {
+            const form = useForm({ fields: {}, onSubmit: () => {} });
+            useFields(form, () => ({
+                steps: ['only'] as const,
+                fields: {
+                    anything: {
+                        step: 'only',
+                        validate: schema,
+                        initial: undefined,
+                    },
+                },
+            }));
+            return form;
+        });
+
+        expect('anything' in result.current.values).toBe(false);
+
+        let errors: Record<string, unknown> = {};
+        await act(async () => {
+            errors = await result.current.validateForm();
+        });
+
+        expect(errors).toEqual({});
+        expect(result.current.status.field.anything.optional()).toBe(true);
+    });
+});
+
 describe('Progress', () => {
     it('position(), first(), last() reflect the current index', () => {
         const { result } = setup(

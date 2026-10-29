@@ -62,7 +62,10 @@ export function useFields<
                     form.setFieldValue(name, field.initial);
                 continue;
             }
-            if (!(name in form.values)) form.setFieldValue(name, field.initial);
+            // Seeding `undefined` never adds the key (Formik's `setIn` drops it), so it
+            // would re-dispatch on every render and loop forever.
+            if (!(name in form.values) && field.initial !== undefined)
+                form.setFieldValue(name, field.initial);
         }
     }, [form, config.fields]);
 

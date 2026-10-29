@@ -82,7 +82,17 @@ export function validate(
         includedFields.map(([name, field]) => [name, field.validate]),
     );
 
-    return toFormikValidate(z.object(schemaShape))(values);
+    // Zod 4 rejects a missing key for `z.any()`/`z.unknown()` even though it accepts an
+    // `undefined` value, and Formik's `setIn` deletes keys set to `undefined`. Seed every
+    // in-scope key so a missing value is validated the same way as `safeParse(undefined)`.
+    const seeded = {
+        ...Object.fromEntries(
+            includedFields.map(([name]) => [name, undefined]),
+        ),
+        ...values,
+    };
+
+    return toFormikValidate(z.object(schemaShape))(seeded);
 }
 
 /**

@@ -24,7 +24,7 @@
         "formik": ">=2.0.0",
         "react": ">=16.8.0",
         "react-dom": ">=16.8.0",
-        "zod": ">=3.0.0"
+        "zod": ">=4.0.0"
     },
     "devDependencies": {
         "@emotion/react": "^11.14.0",
