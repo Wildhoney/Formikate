@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.7.0](https://github.com/Wildhoney/Formikate/compare/v0.6.0...v0.7.0) (2026-10-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* zod 3 is no longer supported; zod >=4.0.0 is required.
+
+### Features
+
+* require zod 4 and validate missing keys like undefined ([17ac121](https://github.com/Wildhoney/Formikate/commit/17ac1211afe9a4e269477535d7369e99ecc95e9c))
+
 ## [0.6.0](https://github.com/Wildhoney/Formikate/compare/v0.5.0...v0.6.0) (2026-10-23)
 
 ### ⚠ BREAKING CHANGES
